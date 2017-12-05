@@ -11,8 +11,8 @@ public class Camera {
     }
 
     public PVector transformationOf(PVector original) {
-        float x = (distance / (this.position.z - original.z)) * (this.position.x - original.x);
-        float y = (distance / (this.position.z - original.z)) * (this.position.y - original.y);
+        float x = ((position.x - original.x) / (position.z - original.z)) * distance;
+        float y = ((position.y - original.y) / (position.z - original.z)) * distance;
         return new PVector(x, y);
     }
 
