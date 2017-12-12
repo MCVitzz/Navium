@@ -16,7 +16,7 @@ public class MainApp extends PApplet {
     private Spaceship spaceship;
 
     public static void main(String[] args) {
-        PApplet.main("MainApp", args);
+        PApplet.main(new String[] {MainApp.class.getName()});
     }
 
     public void settings() {
