@@ -7,7 +7,7 @@ public class Asteroid extends CelestialBody {
 
     private PImage sprite;
 
-    public Asteroid(PVector position, PApplet applet) {
+    Asteroid(PVector position, PApplet applet) {
         super(position, applet.loadImage("asteroid.png"));
         sprite = applet.loadImage("asteroid.png");
     }
@@ -27,5 +27,7 @@ public class Asteroid extends CelestialBody {
     }
 
     public void update() {
+        this.setPosition(this.getPosition().add(new PVector(0,0, -1)));
     }
 }
+    

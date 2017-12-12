@@ -39,6 +39,7 @@ public class MainApp extends PApplet {
             case STATE_RUNNING:
                 Camera cam = spaceship.getCamera();
                 for (CelestialBody celestialBody : celestialBodies) {
+                    celestialBody.update();
                     PVector pos = cam.transformationOf(celestialBody.getPosition());
                     float scale = cam.getScaleOf(celestialBody.getRadius(), celestialBody.getPosition().z);
                     celestialBody.display(pos, scale, this);
@@ -90,8 +91,8 @@ public class MainApp extends PApplet {
     private void createCelestials(int number) {
         celestialBodies = new ArrayList<>();
         for (int i = 0; i < number; i++) {
-            float x = random(width / 8, 7 * width / 8);
-            float y = random(height / 8, 7 * height / 8);
+            float x = width; //random(width / 8, 7 * width / 8);
+            float y = 0;//random(height / 8, 7 * height / 8);
             celestialBodies.add(new Asteroid(x, y, 2000, this));
         }
     }
