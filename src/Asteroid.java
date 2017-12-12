@@ -27,5 +27,7 @@ public class Asteroid extends CelestialBody {
     }
 
     public void update() {
+        this.setPosition(this.getPosition().add(new PVector(0,0, -1)));
     }
 }
+    
