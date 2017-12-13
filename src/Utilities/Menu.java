@@ -1,19 +1,15 @@
+package Utilities;
+
 import processing.core.PApplet;
 import processing.core.PGraphics;
-import processing.core.PImage;
 import processing.core.PVector;
 
-class Menu {
-    private PImage title, play, quit;
+public class Menu {
     private PVector playBtn, quitBtn, titleTitle;
     private int pixelRadius;
 
-    Menu(PApplet applet, float x, float parts, float titlePart, float playPart, float quitPart) {
+    public Menu(PApplet applet, float x, float parts, float titlePart, float playPart, float quitPart) {
         //X is not necessary here, but just in case we'll use it later
-
-        title = applet.loadImage("title.png");
-        play = applet.loadImage("play.png");
-        quit = applet.loadImage("quit.png");
 
         titleTitle = new PVector(x, titlePart * applet.height / parts);
         playBtn = new PVector(x, playPart * applet.height / parts);
@@ -22,17 +18,17 @@ class Menu {
         pixelRadius = 100;
     }
 
-    void display(PGraphics graphics) {
+    public void display(PGraphics graphics, AssetManager assetManager) {
         graphics.imageMode(graphics.CENTER);
         //Draw Title
-        graphics.image(title, titleTitle.x, titleTitle.y);
+        graphics.image(assetManager.logoImage, titleTitle.x, titleTitle.y);
         //Draw Play
-        graphics.image(play, playBtn.x, playBtn.y);
+        graphics.image(assetManager.playImage, playBtn.x, playBtn.y);
         //Draw Quit
-        graphics.image(quit, quitBtn.x, quitBtn.y);
+        graphics.image(assetManager.quitImage, quitBtn.x, quitBtn.y);
     }
 
-    String checkButtons(float mouseX, float mouseY) {
+    public String checkButtons(float mouseX, float mouseY) {
         String result = "";
         PVector mouseVector = new PVector(mouseX, mouseY);
         if (playBtn.dist(mouseVector) <= pixelRadius)
