@@ -5,10 +5,14 @@ import processing.core.PGraphics;
 import processing.core.PVector;
 
 public class Menu {
+
+    //This class handles all the Menu rendering and button clicking
+
     private PVector playBtn, quitBtn, titleTitle;
     private int pixelRadius;
 
     public Menu(PApplet applet, float x, float parts, float titlePart, float playPart, float quitPart) {
+
         //X is not necessary here, but just in case we'll use it later
 
         titleTitle = new PVector(x, titlePart * applet.height / parts);

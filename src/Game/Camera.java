@@ -5,6 +5,8 @@ import processing.core.PVector;
 
 public class Camera {
 
+    //This class handles all the Camera activity there may be
+
     private float distance;
     private PVector position;
 
@@ -15,6 +17,12 @@ public class Camera {
 
     public void update(PVector newPos) {
         position = newPos.copy();
+    }
+
+    public PVector project(PVector position){
+        PVector transformed = PVector.sub(position, getPosition());
+        float scale = distance / transformed.z;
+        return  PVector.mult(transformed, scale);
     }
 
     public void apply(PApplet applet) {
