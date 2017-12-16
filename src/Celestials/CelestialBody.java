@@ -14,19 +14,20 @@ public abstract class CelestialBody implements Comparable<CelestialBody> {
     private boolean active;
 
     CelestialBody(PVector position) {
-        this.position = position.copy();
+        setPosition(position.copy());
+        setActive(true);
     }
 
     public abstract void update();
 
     public abstract void draw(PGraphics g, AssetManager manager);
 
-    public boolean display(Camera camera, PApplet applet, AssetManager manager, float front, boolean debug) {
+    public void display(Camera camera, PApplet applet, AssetManager manager, float front, boolean debug) {
 
         PVector transformed = getTransformed(camera);
 
         if (transformed.z < front)
-            return false;
+            return;
 
         applet.g.pushMatrix();
         {
@@ -47,14 +48,13 @@ public abstract class CelestialBody implements Comparable<CelestialBody> {
             applet.g.popStyle();
         }
         applet.g.popMatrix();
-        return true;
     }
 
-    public PVector getTransformed(Camera camera){
+    PVector getTransformed(Camera camera){
         return PVector.sub(getPosition(), camera.getPosition());
     }
 
-    public PVector getProjected(PVector transformed, float scale){
+    PVector getProjected(PVector transformed, float scale){
         return PVector.mult(transformed, scale);
     }
 
@@ -66,16 +66,12 @@ public abstract class CelestialBody implements Comparable<CelestialBody> {
         this.position = position.copy();
     }
 
-    public float getScale(float cameraDistance, float objectDistance){
+    float getScale(float cameraDistance, float objectDistance){
         return cameraDistance / objectDistance;
     }
 
     public int compareTo(CelestialBody other) {
-        if (this.position.z < other.position.z)
-            return 1;
-        if (this.position.z > other.position.z)
-            return -1;
-        return 0;
+        return Float.compare(other.position.z, this.position.z);
     }
 
     public void setActive(boolean active){

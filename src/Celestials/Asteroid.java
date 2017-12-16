@@ -35,11 +35,11 @@ public class Asteroid extends CelestialBody {
 
         PVector projCenter = camera.project(new PVector(applet.width/2, applet.height/2, 0));
 
-        float widTolerance = manager.asteroidImage.width * scale;
-        float heiTolerance = manager.asteroidImage.height * scale;
+        float widTolerance = manager.asteroidImage.width * scale + (manager.crosshair.width / 2);
+        float heiTolerance = manager.asteroidImage.height * scale + (manager.crosshair.height / 2);
 
         float dist = PVector.dist(projected, projCenter);
-        float max = applet.max(widTolerance, heiTolerance);
+        float max = PApplet.max(widTolerance, heiTolerance);
 
         Boolean inSight = dist <= max;
 
