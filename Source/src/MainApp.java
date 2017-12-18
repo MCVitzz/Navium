@@ -192,7 +192,7 @@ public class MainApp extends PApplet {
                             }
 
                         //Increase the heat
-                        spaceship.setHeat(spaceship.getHeat() + 10, timingManager);
+                        spaceship.setHeat(spaceship.getHeat() + 2, timingManager);
                     }
                 }
                 break;
@@ -210,7 +210,7 @@ public class MainApp extends PApplet {
         switch (this.state) {
             case STATE_MAIN_MENU:
                 cursor();
-                menu = new Menu(this, width / 2, 7, 1, 4, 6);
+                menu = new Menu(this, width / 2, 6, 3, 5);
                 if (celestialBodies != null)
                     celestialBodies.clear();
                 else
