@@ -18,7 +18,7 @@ public class MainApp extends PApplet {
     private static final int STATE_PAUSE_MENU = 2;
     private static final int STATE_GAME_OVER = 3;
 
-    private boolean up, down, left, right, zoomed, fuzzy, debug, stopped;
+    private boolean up, down, left, right, zoomed, fuzzy, debug, stopped, indicators, god;
     private Camera camera;
     private int state;
     private Menu menu;
@@ -41,7 +41,7 @@ public class MainApp extends PApplet {
         frameRate(120);
         assetManager = new AssetManager(this);
         resolutionManager = new ResolutionManager(width, height);
-        zoomed = fuzzy = debug = false;
+        zoomed = fuzzy = debug = god = indicators = stopped = false;
         camera = new Camera(new PVector(0, 0, 0), resolutionManager.getResolvedOfWidth(100));
         timingManager = new TimingManager(this);
         setState(STATE_MAIN_MENU);
@@ -72,29 +72,35 @@ public class MainApp extends PApplet {
                     if (celestialBody.getClass().getName().equals("Celestials.Asteroid") && celestialBody.passedBy(camera, spaceship.getFront())) {
                         boolean betweenX = isBetween(celestialBody.getPosition().x, spaceship.getPosition().x - spaceship.getRadiusX(), spaceship.getPosition().x + spaceship.getRadiusX());
                         boolean betweenY = isBetween(celestialBody.getPosition().y, spaceship.getPosition().y - spaceship.getRadiusY(), spaceship.getPosition().y + spaceship.getRadiusY());
-                        if(betweenX && betweenY)
+                        if (betweenX && betweenY && !god)
                             spaceship.setHealth(spaceship.getHealth() - 10);
                         celestialBody.setPosition(generateNewCelestialPosition());
                         celestialBody.setActive(true);
                     }
                 }
+
+                if (timingManager.getTimeSinceLastTimestampHeat() >= spaceship.getHeatCooldown())
+                    spaceship.setHeat(spaceship.getHeat() - 2, timingManager);
+
                 resetMatrix();
                 spaceship.drawHealth(this, resolutionManager);
+                spaceship.drawHeat(this, resolutionManager);
                 spaceship.drawCrosshair(this, assetManager);
-                text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(20));
                 text("Score: " + Float.toString(spaceship.getScore()), resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(40));
 
-                if(spaceship.getHealth() <= 0)
+                if (indicators)
+                    showVariables();
+
+                if (spaceship.getHealth() <= 0)
                     setState(STATE_GAME_OVER);
                 break;
 
             case STATE_GAME_OVER:
                 textMode(CENTER);
                 textSize(15);
-                text("GAME OVER", width/2, height/2);
+                text("GAME OVER", width / 2, height / 2);
                 break;
         }
-
     }
 
     public void keyPressed() {
@@ -112,6 +118,10 @@ public class MainApp extends PApplet {
             debug = !debug;
         if (key == 'z')
             stopped = !stopped;
+        if (key == 'i')
+            indicators = !indicators;
+        if (key == 'g')
+            god = !god;
     }
 
     public void keyReleased() {
@@ -128,16 +138,26 @@ public class MainApp extends PApplet {
     public void mousePressed() {
         switch (state) {
             case STATE_MAIN_MENU:
+
+                //Check if any button is clicked
+
                 String result = menu.checkButtons(mouseX, mouseY);
-                switch (result) {
-                    case "play":
-                        setState(STATE_RUNNING);
-                        break;
-                    case "quit":
-                        exit();
-                        break;
+
+                //If it is execute the action corresponding to that button
+
+                if (!result.isEmpty()) {
+
+
+                    switch (result) {
+                        case "play":
+                            setState(STATE_RUNNING);
+                            break;
+                        case "quit":
+                            exit();
+                            break;
+                    }
+                    break;
                 }
-                break;
             case STATE_RUNNING:
                 if (mouseButton == RIGHT) {
                     if (zoomed)
@@ -146,24 +166,34 @@ public class MainApp extends PApplet {
                         zoomIn();
                 } else if (mouseButton == LEFT) {
 
-                    ArrayList<Asteroid> asteroids = new ArrayList<>();
+                    if (spaceship.getHeat() <= 90) {
+
+                        //Get an ArrayList of just Asteroids
+
+                        ArrayList<Asteroid> asteroids = new ArrayList<>();
+
+                        for (CelestialBody celestialBody : celestialBodies)
+                            if (celestialBody.getClass().getName().equals("Celestials.Asteroid"))
+                                asteroids.add((Asteroid) celestialBody);
 
 
-                    for (CelestialBody celestialBody : celestialBodies)
-                        if (celestialBody.getClass().getName().equals("Celestials.Asteroid"))
-                            asteroids.add((Asteroid) celestialBody);
+                        //Sorting the asteroids and then reverse the order, if it's closer it'll be handled first
 
+                        java.util.Collections.sort(asteroids);
+                        java.util.Collections.reverse(asteroids);
 
-                    java.util.Collections.sort(asteroids);
-                    java.util.Collections.reverse(asteroids);
+                        //Detect if the shot is colliding with an asteroid or not
 
+                        for (Asteroid asteroid : asteroids)
+                            if (asteroid.inSight(this, assetManager, camera, resolutionManager, debug)) {
+                                spaceship.increaseScore(50);
+                                asteroid.setActive(false);
+                                break;
+                            }
 
-                    for (Asteroid asteroid : asteroids)
-                        if (asteroid.inSight(this, assetManager, camera, resolutionManager, debug)) {
-                            spaceship.increaseScore(50);
-                            asteroid.setActive(false);
-                            break;
-                        }
+                        //Increase the heat
+                        spaceship.setHeat(spaceship.getHeat() + 10, timingManager);
+                    }
                 }
                 break;
 
@@ -172,6 +202,8 @@ public class MainApp extends PApplet {
                 break;
         }
     }
+
+    //This method handles all the behaviour related to the change that is about to be made
 
     private void setState(int state) {
         this.state = state;
@@ -191,6 +223,7 @@ public class MainApp extends PApplet {
                 spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.getResolvedOfWidth(10), resolutionManager);
                 camera = new Camera(spaceship.getPosition(), 100);
                 createCelestials(spaceship.getCelestials());
+                zoomed = indicators = fuzzy = debug = stopped = false;
                 break;
             case STATE_PAUSE_MENU:
                 cursor();
@@ -209,7 +242,79 @@ public class MainApp extends PApplet {
         for (int i = 0; i < number; i++) {
             celestialBodies.add(new Asteroid(generateNewCelestialPosition(), this, resolutionManager));
         }
-        //celestialBodies.add(new Asteroid(new PVector(0, 0, 10000), this, resolutionManager));
+        //        //celestialBodies.add(new Asteroid(new PVector(0, 0, 10000), this, resolutionManager));
+    }
+
+    private void showVariables() {
+        int tru = color(0, 255, 0);
+        int flse = color(255, 0, 0);
+
+        int drawColor;
+
+        //Here we draw the indicators to all the control variables
+
+        text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(20));
+
+        if (debug)
+            drawColor = tru;
+        else
+            drawColor = flse;
+
+        pushStyle();
+        {
+            fill(drawColor);
+            text("Debug", resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(60));
+        }
+        popStyle();
+
+        if (zoomed)
+            drawColor = tru;
+        else
+            drawColor = flse;
+
+        pushStyle();
+        {
+            fill(drawColor);
+            text("Zoomed", resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(80));
+        }
+        popStyle();
+
+        if (fuzzy)
+            drawColor = tru;
+        else
+            drawColor = flse;
+
+        pushStyle();
+        {
+            fill(drawColor);
+            text("Fuzzy", resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(100));
+        }
+        popStyle();
+
+        if (stopped)
+            drawColor = tru;
+        else
+            drawColor = flse;
+
+        pushStyle();
+        {
+            fill(drawColor);
+            text("Stopped", resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(120));
+        }
+        popStyle();
+
+        if (god)
+            drawColor = tru;
+        else
+            drawColor = flse;
+
+        pushStyle();
+        {
+            fill(drawColor);
+            text("God", resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(140));
+        }
+        popStyle();
+
     }
 
     private PVector generateNewCelestialPosition() {
@@ -230,6 +335,7 @@ public class MainApp extends PApplet {
     }
 
     private boolean isBetween(float number, float min, float max) {
+        //In this block we just make sure that the minimum and max value are indeed the minimum and the maximum values, respectively
         float buffer = max(min, max);
         min = min(min, max);
         max = buffer;
