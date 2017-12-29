@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="Navium:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Navium_jar</output-path>
+    <root id="archive" name="Navium.jar">
+      <element id="module-output" name="Navium" />
+      <element id="library" level="project" name="core" />
+    </root>
+  </artifact>
+</component>
