@@ -1,6 +1,5 @@
 package game;
 
-import utilities.ResolutionManager;
 import processing.core.PApplet;
 import processing.core.PVector;
 
@@ -22,12 +21,12 @@ public class Camera {
     }
 
     public PVector project(PVector position) {
-        PVector transformed = PVector.sub(position, getPosition());
+        PVector transformed = PVector.sub(position, position());
         float scale = distance / transformed.z;
         return PVector.mult(transformed, scale);
     }
 
-    public void shake(PApplet applet, ResolutionManager resolutionManager, PVector base) {
+    public void shake(PApplet applet/*, ResolutionManager resolutionManager, PVector base*/) {
 //        float x = applet.random(resolutionManager.getResolvedOfWidth(-70), resolutionManager.getResolvedOfWidth(70));
 //        float y = applet.random(resolutionManager.getResolvedOfHeight(-70), resolutionManager.getResolvedOfHeight(70));
 //
@@ -48,19 +47,19 @@ public class Camera {
         applet.g.translate(applet.width / 2, applet.height / 2);
     }
 
-    public float getDistance() {
+    public float distance() {
         return distance;
     }
 
-    public void setDistance(float distance) {
+    public void distance(float distance) {
         this.distance = distance;
     }
 
-    public PVector getPosition() {
+    public PVector position() {
         return this.position;
     }
 
-    public float getShakeCooldown() {
+    public float shakeCooldown() {
         return shakeCooldown;
     }
 }

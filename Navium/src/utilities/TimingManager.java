@@ -18,23 +18,23 @@ public class TimingManager {
         prevMillis = millis;
     }
 
-    public void setHeatTimestamp() {
+    public void heatTimestamp() {
         heatTimestamp = millis;
     }
 
-    public void setShakingTimestamp() {
+    public void shakingTimestamp() {
         shakeTimestamp = millis;
     }
 
-    public float getTimeSinceLastTimestampHeat() {
+    public float timeSinceLastTimestampHeat() {
         return millis - heatTimestamp;
     }
 
-    public float getTimeSinceLastShakeTimestamp() {
+    public float timeSinceLastShakeTimestamp() {
         return millis - shakeTimestamp;
     }
 
-    public float getDeltaTime() {
+    public float deltaTime() {
         return deltaTime;
     }
 }

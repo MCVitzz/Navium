@@ -31,13 +31,15 @@ public abstract class CelestialBody implements Comparable<CelestialBody> {
 
         applet.g.pushMatrix();
         {
-            float scale = getScale(camera.getDistance(), transformed.z);
+            float scale = getScale(camera.distance(), transformed.z);
             PVector projected = getProjected(transformed, scale);
 
             applet.g.translate(projected.x, projected.y);
             applet.g.scale(scale);
             applet.g.pushStyle();
             {
+
+                //applet.g.rotate(rotation);
                 draw(applet.g, manager);
                 if (debug) {
                     applet.g.rectMode(applet.g.CENTER);
@@ -50,7 +52,7 @@ public abstract class CelestialBody implements Comparable<CelestialBody> {
     }
 
     PVector getTransformed(Camera camera) {
-        return PVector.sub(getPosition(), camera.getPosition());
+        return PVector.sub(getPosition(), camera.position());
     }
 
     PVector getProjected(PVector transformed, float scale) {
@@ -58,7 +60,7 @@ public abstract class CelestialBody implements Comparable<CelestialBody> {
     }
 
     public boolean passedBy(Camera camera, float front) {
-        return PVector.sub(getPosition(), camera.getPosition()).z < front;
+        return PVector.sub(getPosition(), camera.position()).z < front;
     }
 
     float getScale(float cameraDistance, float objectDistance) {

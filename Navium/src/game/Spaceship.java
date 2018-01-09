@@ -1,11 +1,11 @@
 package game;
 
+import processing.core.PApplet;
+import processing.core.PVector;
 import utilities.AssetManager;
 import utilities.GameManager;
 import utilities.ResolutionManager;
 import utilities.TimingManager;
-import processing.core.PApplet;
-import processing.core.PVector;
 
 public class Spaceship {
 
@@ -13,21 +13,22 @@ public class Spaceship {
 
     private PVector position;
     private int score, heat;
-    private float front, speed, controlSpeed, health, radiusX, radiusY, heatCooldown;
+    private float front, speed, controlSpeed, health, radiusX, radiusY, heatCooldown, rotation;
 
     public Spaceship(PVector position, float front, ResolutionManager resolutionManager) {
         this.position = position.copy();
         this.front = front;
-        this.radiusX = resolutionManager.getResolvedOfWidth(400);
-        this.radiusY = resolutionManager.getResolvedOfHeight(225);
-        this.speed = resolutionManager.getResolvedOfWidth(2);
-        this.controlSpeed = resolutionManager.getResolvedOfWidth(2);
+        this.rotation = 0;
+        this.radiusX = resolutionManager.resolvedOfWidth(400);
+        this.radiusY = resolutionManager.resolvedOfHeight(225);
+        this.speed = resolutionManager.resolvedOfWidth(2);
+        this.controlSpeed = resolutionManager.resolvedOfHeight(2);
         this.heatCooldown = 1500;
         this.health = 100;
         this.score = this.heat = 0;
     }
 
-    public void update(GameManager gameManager, boolean up, boolean down, boolean left, boolean right, float deltaTime, boolean stopped) {
+    public void update(GameManager gameManager, boolean up, boolean down, boolean left, boolean right, boolean rotateLeft, boolean rotateRight, float deltaTime, boolean stopped) {
 
         float controlDistance = deltaTime * controlSpeed;
 
@@ -38,6 +39,10 @@ public class Spaceship {
 
         PVector velocity = new PVector(0, 0, distance);
 
+        if (rotateLeft)
+            rotation(rotation() + (3.14F / 8142) * deltaTime);
+        if (rotateRight)
+            rotation(rotation() - (3.14F / 8142) * deltaTime);
         if (left)
             velocity.x -= controlDistance;
         if (right)
@@ -47,16 +52,16 @@ public class Spaceship {
         if (down)
             velocity.y += controlDistance;
 
-        setPosition(getPosition().add(velocity));
+        position(position().add(velocity));
 
-        if (getPosition().x > (3 * gameManager.maxX() / 4))
-            setPosition(new PVector((3 * gameManager.maxX() / 4), getPosition().y, getPosition().z));
-        if (getPosition().x < (3 * gameManager.minX() / 4))
-            setPosition(new PVector((3 * gameManager.minX() / 4), getPosition().y, getPosition().z));
-        if (getPosition().y > (3 * gameManager.maxY() / 4))
-            setPosition(new PVector(getPosition().x, (3 * gameManager.maxY() / 4), getPosition().z));
-        if (getPosition().y < (3 * gameManager.minY() / 4))
-            setPosition(new PVector(getPosition().x, (3 *gameManager. minY() / 4), getPosition().z));
+        if (position().x > (3 * gameManager.maxX() / 4))
+            position(new PVector((3 * gameManager.maxX() / 4), position().y, position().z));
+        if (position().x < (3 * gameManager.minX() / 4))
+            position(new PVector((3 * gameManager.minX() / 4), position().y, position().z));
+        if (position().y > (3 * gameManager.maxY() / 4))
+            position(new PVector(position().x, (3 * gameManager.maxY() / 4), position().z));
+        if (position().y < (3 * gameManager.minY() / 4))
+            position(new PVector(position().x, (3 * gameManager.minY() / 4), position().z));
     }
 
     public void drawCrosshair(PApplet applet, AssetManager manager) {
@@ -69,9 +74,9 @@ public class Spaceship {
             applet.g.rectMode(applet.g.CORNER);
             applet.g.stroke(255, 0, 0);
             applet.g.noFill();
-            applet.g.rect(resolutionManager.getResolvedOfWidth(1700), resolutionManager.getResolvedOfHeight(50), resolutionManager.getResolvedOfWidth(200), resolutionManager.getResolvedOfHeight(15)); //background bar of progress bar
+            applet.g.rect(resolutionManager.resolvedOfWidth(1700), resolutionManager.resolvedOfHeight(50), resolutionManager.resolvedOfWidth(200), resolutionManager.resolvedOfHeight(15)); //background bar of progress bar
             applet.g.fill(255, 0, 0);
-            applet.g.rect(resolutionManager.getResolvedOfWidth(1700), resolutionManager.getResolvedOfHeight(50), resolutionManager.getResolvedOfWidth(health * 2), resolutionManager.getResolvedOfHeight(15));
+            applet.g.rect(resolutionManager.resolvedOfWidth(1700), resolutionManager.resolvedOfHeight(50), resolutionManager.resolvedOfWidth(health * 2), resolutionManager.resolvedOfHeight(15));
         }
         applet.g.popStyle();
     }
@@ -82,10 +87,10 @@ public class Spaceship {
             applet.g.rectMode(applet.g.CORNER);
             applet.g.stroke(255, 0, 0);
             applet.g.noFill();
-            applet.g.rect(resolutionManager.getResolvedOfWidth(1700), resolutionManager.getResolvedOfHeight(90), resolutionManager.getResolvedOfWidth(200), resolutionManager.getResolvedOfHeight(15)); //background bar of progress bar
+            applet.g.rect(resolutionManager.resolvedOfWidth(1700), resolutionManager.resolvedOfHeight(90), resolutionManager.resolvedOfWidth(200), resolutionManager.resolvedOfHeight(15)); //background bar of progress bar
             applet.g.fill(255, 0, 0);
-            gradient(resolutionManager.getResolvedOfWidth(1700), resolutionManager.getResolvedOfHeight(90), resolutionManager.getResolvedOfWidth(heat * 2), applet.color(255, 255, 255), applet.color((heat * 2 * 255) / 200, 0, 0), applet);
-            applet.g.rect(resolutionManager.getResolvedOfWidth(1700), resolutionManager.getResolvedOfHeight(90), resolutionManager.getResolvedOfWidth(heat * 2), resolutionManager.getResolvedOfHeight(15));
+            gradient(resolutionManager.resolvedOfWidth(1700), resolutionManager.resolvedOfHeight(90), resolutionManager.resolvedOfWidth(heat * 2), applet.color(255, 255, 255), applet.color((heat * 2 * 255) / 200, 0, 0), applet);
+            applet.g.rect(resolutionManager.resolvedOfWidth(1700), resolutionManager.resolvedOfHeight(90), resolutionManager.resolvedOfWidth(heat * 2), resolutionManager.resolvedOfHeight(15));
         }
         applet.g.popStyle();
     }
@@ -103,15 +108,23 @@ public class Spaceship {
         }
     }
 
-    public PVector getPosition() {
+    private void rotation(float rotation) {
+        this.rotation = rotation;
+    }
+
+    private float rotation() {
+        return this.rotation;
+    }
+
+    public PVector position() {
         return position;
     }
 
-    private void setPosition(PVector position) {
+    private void position(PVector position) {
         this.position = position;
     }
 
-    public float getFront() {
+    public float front() {
         return this.front;
     }
 
@@ -119,38 +132,38 @@ public class Spaceship {
         this.score += increase;
     }
 
-    public int getScore() {
+    public int score() {
         return score;
     }
 
-    public float getHealth() {
+    public float health() {
         return health;
     }
 
-    public void setHealth(float newHealth) {
+    public void health(float newHealth) {
         this.health = newHealth;
     }
 
-    public float getRadiusX() {
+    public float radiusX() {
         return radiusX;
     }
 
-    public float getRadiusY() {
+    public float radiusY() {
         return radiusY;
     }
 
-    public int getHeat() {
+    public int heat() {
         return heat;
     }
 
-    public void setHeat(int heat, TimingManager timingManager) {
-        timingManager.setHeatTimestamp();
+    public void heat(int heat, TimingManager timingManager) {
+        timingManager.heatTimestamp();
         this.heat = heat;
         if (this.heat <= 0)
             this.heat = 0;
     }
 
-    public float getHeatCooldown() {
+    public float heatCooldown() {
         return heatCooldown;
     }
 }

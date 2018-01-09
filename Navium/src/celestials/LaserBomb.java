@@ -5,16 +5,16 @@ import utilities.ResolutionManager;
 import processing.core.PGraphics;
 import processing.core.PVector;
 
-public class Laser extends CelestialBody {
+public class LaserBomb extends CelestialBody {
 
     private PVector prevPosition;
 
     private float speed;
 
-    public Laser(PVector position, ResolutionManager resolutionManager) {
+    public LaserBomb(PVector position, ResolutionManager resolutionManager) {
         super(position.copy());
         this.prevPosition = position.copy();
-        this.speed = resolutionManager.getResolvedOfWidth(200);
+        this.speed = resolutionManager.resolvedOfWidth(200);
     }
 
     public void update() {
@@ -31,6 +31,6 @@ public class Laser extends CelestialBody {
     }
 
     public boolean collidingWith(ResolutionManager resolutionManager, Asteroid asteroid) {
-        return getPosition().dist(asteroid.getPosition()) < resolutionManager.getResolvedOfWidth(300);
+        return getPosition().dist(asteroid.getPosition()) < resolutionManager.resolvedOfWidth(300);
     }
 }

@@ -15,7 +15,7 @@ public class Asteroid extends CelestialBody {
 
     public Asteroid(PVector position, PApplet applet, ResolutionManager resolutionManager) {
         super(position);
-        velocity = new PVector(applet.random(resolutionManager.getResolvedOfWidth(-20), resolutionManager.getResolvedOfWidth(20)), applet.random(resolutionManager.getResolvedOfHeight(-20), resolutionManager.getResolvedOfHeight(20)), 0);
+        velocity = new PVector(applet.random(resolutionManager.resolvedOfWidth(-20), resolutionManager.resolvedOfWidth(20)), applet.random(resolutionManager.resolvedOfWidth(-20), resolutionManager.resolvedOfWidth(20)), 0);
     }
 
     public void draw(PGraphics g, AssetManager manager) {
@@ -29,7 +29,7 @@ public class Asteroid extends CelestialBody {
 
     public boolean inSight(PApplet applet, AssetManager manager, Camera camera, ResolutionManager resolutionManager, boolean debug) {
         PVector transformed = getTransformed(camera);
-        float scale = getScale(camera.getDistance(), transformed.z);
+        float scale = getScale(camera.distance(), transformed.z);
         PVector projected = getProjected(transformed, scale);
 
         PVector projCenter = camera.project(new PVector(applet.width / 2, applet.height / 2, 0));
@@ -44,7 +44,7 @@ public class Asteroid extends CelestialBody {
 
         if (debug) {
             applet.g.rectMode(applet.g.CENTER);
-            applet.g.rect(applet.width / 2, applet.height / 2, resolutionManager.getResolvedOfWidth(50), resolutionManager.getResolvedOfWidth(50));
+            applet.g.rect(applet.width / 2, applet.height / 2, resolutionManager.resolvedOfWidth(50), resolutionManager.resolvedOfWidth(50));
         }
         return inSight;
     }

@@ -16,11 +16,11 @@ public class ResolutionManager {
         this.currentHeight = currentHeight;
     }
 
-    public float getResolvedOfWidth(float number) {
+    public float resolvedOfWidth(float number) {
         return (currentWidth * number) / width;
     }
 
-    public float getResolvedOfHeight(float number) {
+    public float resolvedOfHeight(float number) {
         return (currentHeight * number) / height;
     }
 
