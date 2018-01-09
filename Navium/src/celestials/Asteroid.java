@@ -1,8 +1,8 @@
-package Celestials;
+package celestials;
 
-import Game.Camera;
-import Utilities.AssetManager;
-import Utilities.ResolutionManager;
+import game.Camera;
+import utilities.AssetManager;
+import utilities.ResolutionManager;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;

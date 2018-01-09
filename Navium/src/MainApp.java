@@ -1,13 +1,10 @@
-import Celestials.Asteroid;
-import Celestials.CelestialBody;
-import Celestials.Laser;
-import Game.Camera;
-import Game.Spaceship;
-import Game.Starfield;
-import Utilities.AssetManager;
-import Utilities.Menu;
-import Utilities.ResolutionManager;
-import Utilities.TimingManager;
+import celestials.Asteroid;
+import celestials.CelestialBody;
+import celestials.Laser;
+import game.Camera;
+import game.Spaceship;
+import game.Starfield;
+import utilities.*;
 import processing.core.PApplet;
 import processing.core.PVector;
 
@@ -27,6 +24,7 @@ public class MainApp extends PApplet {
     private ArrayList<CelestialBody> celestialBodies;
     private TimingManager timingManager;
     private ResolutionManager resolutionManager;
+    private GameManager gameManager;
     private Spaceship spaceship;
     private AssetManager assetManager;
     private Starfield starfield;
@@ -44,6 +42,7 @@ public class MainApp extends PApplet {
         frameRate(120);
         assetManager = new AssetManager(this);
         resolutionManager = new ResolutionManager(width, height);
+        gameManager = new GameManager(resolutionManager);
         starfield = new Starfield(this, resolutionManager, Math.round(resolutionManager.getResolvedOfWidth(1200)));
         zoomed = fuzzy = debug = god = indicators = stopped = false;
         camera = new Camera(new PVector(0, 0, 0), resolutionManager.getResolvedOfWidth(100));
@@ -66,7 +65,7 @@ public class MainApp extends PApplet {
                 timingManager.update(this);
                 starfield.update(this, resolutionManager, timingManager.getDeltaTime());
                 starfield.display(this.g);
-                spaceship.update(up, down, left, right, timingManager.getDeltaTime(), stopped);
+                spaceship.update(gameManager, up, down, left, right, timingManager.getDeltaTime(), stopped);
                 spaceship.increaseScore(Math.round(timingManager.getDeltaTime() * .1F));
                 camera.update(spaceship.getPosition());
                 camera.apply(this);
@@ -88,7 +87,6 @@ public class MainApp extends PApplet {
                             spaceship.setHealth(spaceship.getHealth() - 10);
                             setShaking(true);
                         }
-
                         celestialBody.setPosition(generateNewCelestialPosition());
                         celestialBody.setActive(true);
                     }
@@ -113,7 +111,7 @@ public class MainApp extends PApplet {
                 for (CelestialBody celestialBody : celestialBodies)
                     if (celestialBody.getClass().getName().equals("Celestials.Laser")) {
                         celestialBody.update();
-                        if (celestialBody.getPosition().z > spaceship.getPosition().z + spaceship.getMaxZ())
+                        if (celestialBody.getPosition().z > spaceship.getPosition().z + gameManager.maxZ())
                             buffer.add(celestialBody);
                         for (Asteroid asteroid : asteroids)
                             if (((Laser) celestialBody).collidingWith(resolutionManager, asteroid)) {
@@ -255,7 +253,7 @@ public class MainApp extends PApplet {
                 menu = null;
                 spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.getResolvedOfWidth(10), resolutionManager);
                 camera = new Camera(spaceship.getPosition(), 100);
-                createCelestials(spaceship.getCelestials());
+                createCelestials(gameManager.asteroids());
                 zoomed = indicators = fuzzy = debug = stopped = false;
                 break;
             case STATE_PAUSE_MENU:
@@ -318,9 +316,9 @@ public class MainApp extends PApplet {
     }
 
     private PVector generateNewCelestialPosition() {
-        float x = random(spaceship.getMinX(), spaceship.getMaxX()); //random(width / 8, 7 * width / 8);
-        float y = random(spaceship.getMinY(), spaceship.getMaxY()); //random(height / 8, 7 * height / 8);
-        float z = random(spaceship.getMinZ(), spaceship.getMaxZ()) + camera.getPosition().z; //random((width/height) * 500, (width/height) * 1500);
+        float x = random(gameManager.minX(), gameManager.maxX()); //random(width / 8, 7 * width / 8);
+        float y = random(gameManager.minY(), gameManager.maxY()); //random(height / 8, 7 * height / 8);
+        float z = random(gameManager.minZ(), gameManager.maxZ()) + camera.getPosition().z; //random((width/height) * 500, (width/height) * 1500);
         return new PVector(x, y, z);
     }
 

@@ -1,6 +1,6 @@
-package Game;
+package game;
 
-import Utilities.ResolutionManager;
+import utilities.ResolutionManager;
 import processing.core.PApplet;
 import processing.core.PVector;
 

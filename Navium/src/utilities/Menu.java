@@ -1,4 +1,4 @@
-package Utilities;
+package utilities;
 
 import processing.core.PApplet;
 import processing.core.PGraphics;

@@ -1,8 +1,9 @@
-package Game;
+package game;
 
-import Utilities.AssetManager;
-import Utilities.ResolutionManager;
-import Utilities.TimingManager;
+import utilities.AssetManager;
+import utilities.GameManager;
+import utilities.ResolutionManager;
+import utilities.TimingManager;
 import processing.core.PApplet;
 import processing.core.PVector;
 
@@ -11,21 +12,14 @@ public class Spaceship {
     //This class is equivalent to the 'Player' class in most games, it also holds some of the game's parameters
 
     private PVector position;
-    private int celestials, score, heat;
-    private float front, maxX, minX, maxY, minY, maxZ, minZ, speed, controlSpeed, health, radiusX, radiusY, heatCooldown;
+    private int score, heat;
+    private float front, speed, controlSpeed, health, radiusX, radiusY, heatCooldown;
 
     public Spaceship(PVector position, float front, ResolutionManager resolutionManager) {
         this.position = position.copy();
-        this.celestials = Math.round(resolutionManager.getResolvedOfWidth(1000));
         this.front = front;
         this.radiusX = resolutionManager.getResolvedOfWidth(400);
         this.radiusY = resolutionManager.getResolvedOfHeight(225);
-        this.maxX = resolutionManager.getResolvedOfWidth(10000);
-        this.minX = resolutionManager.getResolvedOfWidth(-10000);
-        this.maxY = resolutionManager.getResolvedOfHeight(10000);
-        this.minY = resolutionManager.getResolvedOfHeight(-10000);
-        this.maxZ = resolutionManager.getResolvedOfWidth(15000);
-        this.minZ = resolutionManager.getResolvedOfWidth(1500);
         this.speed = resolutionManager.getResolvedOfWidth(2);
         this.controlSpeed = resolutionManager.getResolvedOfWidth(2);
         this.heatCooldown = 1500;
@@ -33,7 +27,7 @@ public class Spaceship {
         this.score = this.heat = 0;
     }
 
-    public void update(boolean up, boolean down, boolean left, boolean right, float deltaTime, boolean stopped) {
+    public void update(GameManager gameManager, boolean up, boolean down, boolean left, boolean right, float deltaTime, boolean stopped) {
 
         float controlDistance = deltaTime * controlSpeed;
 
@@ -55,14 +49,14 @@ public class Spaceship {
 
         setPosition(getPosition().add(velocity));
 
-        if (getPosition().x > (3 * maxX / 4))
-            setPosition(new PVector((3 * maxX / 4), getPosition().y, getPosition().z));
-        if (getPosition().x < (3 * minX / 4))
-            setPosition(new PVector((3 * minX / 4), getPosition().y, getPosition().z));
-        if (getPosition().y > (3 * maxY / 4))
-            setPosition(new PVector(getPosition().x, (3 * maxY / 4), getPosition().z));
-        if (getPosition().y < (3 * minY / 4))
-            setPosition(new PVector(getPosition().x, (3 * minY / 4), getPosition().z));
+        if (getPosition().x > (3 * gameManager.maxX() / 4))
+            setPosition(new PVector((3 * gameManager.maxX() / 4), getPosition().y, getPosition().z));
+        if (getPosition().x < (3 * gameManager.minX() / 4))
+            setPosition(new PVector((3 * gameManager.minX() / 4), getPosition().y, getPosition().z));
+        if (getPosition().y > (3 * gameManager.maxY() / 4))
+            setPosition(new PVector(getPosition().x, (3 * gameManager.maxY() / 4), getPosition().z));
+        if (getPosition().y < (3 * gameManager.minY() / 4))
+            setPosition(new PVector(getPosition().x, (3 *gameManager. minY() / 4), getPosition().z));
     }
 
     public void drawCrosshair(PApplet applet, AssetManager manager) {
@@ -117,36 +111,8 @@ public class Spaceship {
         this.position = position;
     }
 
-    public int getCelestials() {
-        return celestials;
-    }
-
     public float getFront() {
         return this.front;
-    }
-
-    public float getMaxX() {
-        return maxX;
-    }
-
-    public float getMaxY() {
-        return maxY;
-    }
-
-    public float getMinX() {
-        return minX;
-    }
-
-    public float getMinY() {
-        return minY;
-    }
-
-    public float getMaxZ() {
-        return maxZ;
-    }
-
-    public float getMinZ() {
-        return minZ;
     }
 
     public void increaseScore(int increase) {

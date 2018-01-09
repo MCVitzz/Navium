@@ -1,12 +1,12 @@
-import Celestials.Asteroid;
-import Celestials.CelestialBody;
-import Celestials.Laser;
-import Game.Camera;
-import Game.Spaceship;
-import Utilities.AssetManager;
-import Utilities.Menu;
-import Utilities.ResolutionManager;
-import Utilities.TimingManager;
+import celestials.Asteroid;
+import celestials.CelestialBody;
+import celestials.Laser;
+import game.Camera;
+import game.Spaceship;
+import utilities.AssetManager;
+import utilities.Menu;
+import utilities.ResolutionManager;
+import utilities.TimingManager;
 import processing.core.PApplet;
 import processing.core.PVector;
 

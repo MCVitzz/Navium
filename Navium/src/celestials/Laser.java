@@ -1,7 +1,7 @@
-package Celestials;
+package celestials;
 
-import Utilities.AssetManager;
-import Utilities.ResolutionManager;
+import utilities.AssetManager;
+import utilities.ResolutionManager;
 import processing.core.PGraphics;
 import processing.core.PVector;
 
