@@ -6,40 +6,36 @@ import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;
 
-public abstract class CelestialBody implements Comparable<CelestialBody> {
+public abstract class CelestialBody extends PhysicsObject implements Comparable<CelestialBody> {
 
     //This class is a super class for all the bodies that can be displayed on the screen
-
-    private PVector position;
     private boolean active;
 
-    CelestialBody(PVector position) {
-        setPosition(position.copy());
-        setActive(true);
+    CelestialBody(PVector position, PVector velocity, PVector force, float mass) {
+        super(position, velocity, force, mass);
+        active(true);
     }
 
-    public abstract void update();
+    public abstract void update(float deltaTime);
 
     public abstract void draw(PGraphics g, AssetManager manager);
 
     public void display(Camera camera, PApplet applet, AssetManager manager, float front, boolean debug) {
 
-        PVector transformed = getTransformed(camera);
+        PVector transformed = transformed(camera);
 
         if (transformed.z < front)
             return;
 
         applet.g.pushMatrix();
         {
-            float scale = getScale(camera.distance(), transformed.z);
-            PVector projected = getProjected(transformed, scale);
+            float scale = scale(camera.distance(), transformed.z);
+            PVector projected = projected(transformed, scale);
 
             applet.g.translate(projected.x, projected.y);
             applet.g.scale(scale);
             applet.g.pushStyle();
             {
-
-                //applet.g.rotate(rotation);
                 draw(applet.g, manager);
                 if (debug) {
                     applet.g.rectMode(applet.g.CENTER);
@@ -51,39 +47,31 @@ public abstract class CelestialBody implements Comparable<CelestialBody> {
         applet.g.popMatrix();
     }
 
-    PVector getTransformed(Camera camera) {
-        return PVector.sub(getPosition(), camera.position());
+    private PVector transformed(Camera camera) {
+        return PVector.sub(position(), camera.position());
     }
 
-    PVector getProjected(PVector transformed, float scale) {
+    private PVector projected(PVector transformed, float scale) {
         return PVector.mult(transformed, scale);
     }
 
     public boolean passedBy(Camera camera, float front) {
-        return PVector.sub(getPosition(), camera.position()).z < front;
+        return PVector.sub(position(), camera.position()).z < front;
     }
 
-    float getScale(float cameraDistance, float objectDistance) {
+    private float scale(float cameraDistance, float objectDistance) {
         return cameraDistance / objectDistance;
     }
 
     public int compareTo(CelestialBody other) {
-        return Float.compare(other.position.z, this.position.z);
+        return Float.compare(other.position().z, this.position().z);
     }
 
-    public boolean getActive() {
+    public boolean active() {
         return active;
     }
 
-    public void setActive(boolean active) {
+    public void active(boolean active) {
         this.active = active;
-    }
-
-    public PVector getPosition() {
-        return position;
-    }
-
-    public void setPosition(PVector position) {
-        this.position = position.copy();
     }
 }

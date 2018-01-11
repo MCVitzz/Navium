@@ -1,21 +1,83 @@
 package utilities;
 
+import celestials.AntiGravitationalMissile;
+import celestials.Asteroid;
+import celestials.CelestialBody;
+import celestials.LaserBomb;
+
+import java.util.ArrayList;
+
 public class GameManager {
     private boolean up, down, left, right, rotateLeft, rotateRight, zoomed, fuzzy, debug, stopped, indicators, god, shaking;
-    private int asteroids;
+    private int maxAsteroids;
     private float maxX, minX, maxY, minY, maxZ, minZ;
     private States state;
+    private ArrayList<CelestialBody> celestialBodies;
+    private ArrayList<LaserBomb> laserBombs;
+    private ArrayList<Asteroid> asteroids;
+    private ArrayList<AntiGravitationalMissile> antiGravitationalMissiles;
 
     public GameManager(ResolutionManager resolutionManager) {
-
         this.zoomed = this.fuzzy = this.debug = this.god = this.indicators = this.stopped = false;
-        this.asteroids = Math.round(resolutionManager.resolvedOfWidth(1000));
+        this.maxAsteroids = Math.round(resolutionManager.resolvedOfWidth(2000));
         this.maxX = resolutionManager.resolvedOfWidth(10000);
         this.minX = resolutionManager.resolvedOfWidth(-10000);
         this.maxY = resolutionManager.resolvedOfHeight(10000);
         this.minY = resolutionManager.resolvedOfHeight(-10000);
         this.maxZ = resolutionManager.resolvedOfWidth(15000);
         this.minZ = resolutionManager.resolvedOfWidth(1500);
+    }
+
+
+    public void addAntiGravitationalMissile(AntiGravitationalMissile antiGravitationalMissile) {
+        this.antiGravitationalMissiles.add(antiGravitationalMissile);
+        this.celestialBodies.add(antiGravitationalMissile);
+    }
+
+    public void addLaserBomb(LaserBomb laserBomb) {
+        this.laserBombs.add(laserBomb);
+        this.celestialBodies.add(laserBomb);
+    }
+
+    public void addAsteroid(Asteroid asteroid) {
+        this.asteroids.add(asteroid);
+        this.celestialBodies.add(asteroid);
+    }
+
+    public void removeLaserBombs(ArrayList<LaserBomb> laserBombs) {
+        this.laserBombs.removeAll(laserBombs);
+        this.celestialBodies.removeAll(laserBombs);
+    }
+
+    public void removeAntiGravitationalMissiles(ArrayList<AntiGravitationalMissile> antiGravitationalMissiles) {
+        this.antiGravitationalMissiles.removeAll(antiGravitationalMissiles);
+        this.celestialBodies.removeAll(antiGravitationalMissiles);
+    }
+
+    public void initializeCelestialBodies() {
+        celestialBodies = new ArrayList<>();
+        laserBombs = new ArrayList<>();
+        antiGravitationalMissiles = new ArrayList<>();
+        asteroids = new ArrayList<>();
+    }
+
+    public ArrayList<Asteroid> asteroids() {
+        return asteroids;
+    }
+
+    public ArrayList<LaserBomb> laserBombs() {
+        return laserBombs;
+    }
+
+    public ArrayList<AntiGravitationalMissile> antiGravitationalMissiles() {
+        return antiGravitationalMissiles;
+    }
+
+    public void clearCelestialBodies() {
+        laserBombs.clear();
+        antiGravitationalMissiles.clear();
+        asteroids.clear();
+        celestialBodies.clear();
     }
 
     public void state(States state) {
@@ -52,6 +114,10 @@ public class GameManager {
 
     public boolean debug() {
         return this.debug;
+    }
+
+    public ArrayList<CelestialBody> celestialBodies() {
+        return this.celestialBodies;
     }
 
     public boolean stopped() {
@@ -154,8 +220,8 @@ public class GameManager {
         return this.minZ;
     }
 
-    public int asteroids() {
-        return this.asteroids;
+    public int maxAsteroids() {
+        return this.maxAsteroids;
     }
 
 }

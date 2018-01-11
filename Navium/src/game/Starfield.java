@@ -24,7 +24,7 @@ public class Starfield {
     public void update(PApplet applet, ResolutionManager resolutionManager, float deltaTime) {
         float delta = deltaTime * .001F;
         for (Star star : stars) {
-            star.position(star.position().add(velocity.copy().mult(delta)));
+            star.position(star.position().add(PVector.mult(velocity, delta)));
             if (star.position().x > applet.width)
                 star.position(new PVector(0, applet.random(0, applet.height)));
             if (star.position().x < 0)

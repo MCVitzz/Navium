@@ -2,6 +2,7 @@ package game;
 
 import processing.core.PApplet;
 import processing.core.PVector;
+import utilities.ResolutionManager;
 
 public class Camera {
 
@@ -20,26 +21,11 @@ public class Camera {
         position = newPos.copy();
     }
 
-    public PVector project(PVector position) {
-        PVector transformed = PVector.sub(position, position());
-        float scale = distance / transformed.z;
-        return PVector.mult(transformed, scale);
-    }
+    public void shake(PApplet applet, ResolutionManager resolutionManager, PVector base) {
+        float x = applet.random(resolutionManager.resolvedOfWidth(-50), resolutionManager.resolvedOfWidth(50));
+        float y = applet.random(resolutionManager.resolvedOfHeight(-50), resolutionManager.resolvedOfHeight(50));
 
-    public void shake(PApplet applet/*, ResolutionManager resolutionManager, PVector base*/) {
-//        float x = applet.random(resolutionManager.getResolvedOfWidth(-70), resolutionManager.getResolvedOfWidth(70));
-//        float y = applet.random(resolutionManager.getResolvedOfHeight(-70), resolutionManager.getResolvedOfHeight(70));
-//
-//        update(PVector.add(new PVector(x, y), base));
-//        apply(applet);
-
-        applet.g.pushStyle();
-        {
-            applet.g.fill(applet.color(255, 0, 0, 50));
-            applet.g.rect(0, 0, applet.width, applet.height);
-        }
-        applet.g.popStyle();
-
+        update(PVector.add(new PVector(x, y), base));
     }
 
     public void apply(PApplet applet) {
