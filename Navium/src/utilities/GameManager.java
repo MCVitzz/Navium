@@ -4,12 +4,15 @@ import celestials.AntiGravitationalMissile;
 import celestials.Asteroid;
 import celestials.CelestialBody;
 import celestials.LaserBomb;
+import game.Camera;
+import processing.core.PApplet;
+import processing.core.PVector;
 
 import java.util.ArrayList;
 
 public class GameManager {
-    private boolean up, down, left, right, rotateLeft, rotateRight, zoomed, fuzzy, debug, stopped, indicators, god, shaking;
-    private int maxAsteroids;
+    private boolean up, down, left, right, rotateLeft, rotateRight, zoomed, fuzzy, stopped, indicators, god, shaking;
+    private int maxAsteroids, score, lastIncrease;
     private float maxX, minX, maxY, minY, maxZ, minZ;
     private States state;
     private ArrayList<CelestialBody> celestialBodies;
@@ -18,14 +21,15 @@ public class GameManager {
     private ArrayList<AntiGravitationalMissile> antiGravitationalMissiles;
 
     public GameManager(ResolutionManager resolutionManager) {
-        this.zoomed = this.fuzzy = this.debug = this.god = this.indicators = this.stopped = false;
-        this.maxAsteroids = Math.round(resolutionManager.resolvedOfWidth(2000));
+        this.zoomed = this.fuzzy = this.god = this.indicators = this.stopped = false;
+        this.maxAsteroids = Math.round(resolutionManager.resolvedOfWidth(0));
         this.maxX = resolutionManager.resolvedOfWidth(10000);
         this.minX = resolutionManager.resolvedOfWidth(-10000);
         this.maxY = resolutionManager.resolvedOfHeight(10000);
         this.minY = resolutionManager.resolvedOfHeight(-10000);
         this.maxZ = resolutionManager.resolvedOfWidth(15000);
         this.minZ = resolutionManager.resolvedOfWidth(1500);
+        this.score = this.lastIncrease = 0;
     }
 
 
@@ -80,7 +84,32 @@ public class GameManager {
         celestialBodies.clear();
     }
 
-    public void state(States state) {
+    public PVector generateNewCelestialPosition(PApplet applet, Camera camera) {
+        float x = applet.random(minX(), maxX());
+        float y = applet.random(minY(), maxY());
+        float z = applet.random(minZ(), maxZ()) + camera.position().z;
+        return new PVector(x, y, z);
+    }
+
+    public void createCelestials(int number, Camera camera, PApplet applet, ResolutionManager resolutionManager) {
+        //Generating Asteroids
+        for (int i = 0; i < number; i++)
+            addAsteroid(new Asteroid(generateNewCelestialPosition(applet, camera), applet, resolutionManager, Asteroid.Size.REGULAR));
+    }
+
+    public void increaseScore(int increase) {
+        this.score += increase;
+        if (score() >= lastIncrease + 10000) {
+            setMaxAsteroidsTo(maxAsteroids() + 10);
+            this.lastIncrease = score();
+        }
+    }
+
+    public int score() {
+        return score;
+    }
+
+    public void setStateTo(States state) {
         this.state = state;
     }
 
@@ -104,23 +133,19 @@ public class GameManager {
         return this.left;
     }
 
-    public boolean zoomed() {
+    public boolean isZoomed() {
         return this.zoomed;
     }
 
-    public boolean fuzzy() {
+    public boolean isFuzzy() {
         return this.fuzzy;
-    }
-
-    public boolean debug() {
-        return this.debug;
     }
 
     public ArrayList<CelestialBody> celestialBodies() {
         return this.celestialBodies;
     }
 
-    public boolean stopped() {
+    public boolean isStopped() {
         return this.stopped;
     }
 
@@ -132,7 +157,7 @@ public class GameManager {
         return this.god;
     }
 
-    public boolean shaking() {
+    public boolean isShaking() {
         return this.shaking;
     }
 
@@ -144,55 +169,51 @@ public class GameManager {
         return this.rotateRight;
     }
 
-    public void up(boolean up) {
+    public void setUpTo(boolean up) {
         this.up = up;
     }
 
-    public void down(boolean down) {
+    public void setDownTo(boolean down) {
         this.down = down;
     }
 
-    public void right(boolean right) {
+    public void setRightTo(boolean right) {
         this.right = right;
     }
 
-    public void left(boolean left) {
+    public void setLeftTo(boolean left) {
         this.left = left;
     }
 
-    public void zoomed(boolean zoomed) {
+    public void setZoomedTo(boolean zoomed) {
         this.zoomed = zoomed;
     }
 
-    public void fuzzy(boolean fuzzy) {
+    public void setFuzzyTo(boolean fuzzy) {
         this.fuzzy = fuzzy;
     }
 
-    public void debug(boolean debug) {
-        this.debug = debug;
-    }
-
-    public void stopped(boolean stopped) {
+    public void setStoppedTo(boolean stopped) {
         this.stopped = stopped;
     }
 
-    public void indicators(boolean indicators) {
+    public void setIndicatorsTo(boolean indicators) {
         this.indicators = indicators;
     }
 
-    public void god(boolean god) {
+    public void setGodTo(boolean god) {
         this.god = god;
     }
 
-    public void shaking(boolean shaking) {
+    public void setShakingTo(boolean shaking) {
         this.shaking = shaking;
     }
 
-    public void rotateLeft(boolean rotateLeft) {
+    public void setRotateLeftTo(boolean rotateLeft) {
         this.rotateLeft = rotateLeft;
     }
 
-    public void rotateRight(boolean rotateRight) {
+    public void setRotateRightTo(boolean rotateRight) {
         this.rotateRight = rotateRight;
     }
 
@@ -216,12 +237,16 @@ public class GameManager {
         return this.maxZ;
     }
 
-    public float minZ() {
+    private float minZ() {
         return this.minZ;
     }
 
     public int maxAsteroids() {
         return this.maxAsteroids;
+    }
+
+    private void setMaxAsteroidsTo(int maxAsteroids) {
+        this.maxAsteroids = maxAsteroids;
     }
 
 }

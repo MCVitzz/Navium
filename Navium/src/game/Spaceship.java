@@ -7,10 +7,10 @@ import utilities.TimingManager;
 
 public class Spaceship {
 
-    //This class is equivalent to the 'Player' class in most games, it also holds some of the game's parameters
+    //This class is equivalent to the 'Player' class in most games
 
     private PVector position;
-    private int score, heat;
+    private int heat;
     private float front, speed, controlSpeed, health, radiusX, radiusY, heatCooldown, rotation;
 
     public Spaceship(PVector position, float front, ResolutionManager resolutionManager) {
@@ -23,7 +23,7 @@ public class Spaceship {
         this.controlSpeed = resolutionManager.resolvedOfHeight(2);
         this.heatCooldown = 1500;
         this.health = 100;
-        this.score = this.heat = 0;
+        this.heat = 0;
     }
 
     public void update(GameManager gameManager, boolean up, boolean down, boolean left, boolean right, boolean rotateLeft, boolean rotateRight, float deltaTime, boolean stopped) {
@@ -38,9 +38,9 @@ public class Spaceship {
         PVector velocity = new PVector(0, 0, distance);
 
         if (rotateLeft)
-            rotation(rotation() + (3.14F / 8142) * deltaTime);
+            setRotationTo(rotation() + (3.14F / 8142) * deltaTime);
         if (rotateRight)
-            rotation(rotation() - (3.14F / 8142) * deltaTime);
+            setRotationTo(rotation() - (3.14F / 8142) * deltaTime);
         if (left)
             velocity.x -= controlDistance;
         if (right)
@@ -50,19 +50,19 @@ public class Spaceship {
         if (down)
             velocity.y += controlDistance;
 
-        position(PVector.add(position(), velocity));
+        setPositionTo(PVector.add(position(), velocity));
 
         if (position().x > (3 * gameManager.maxX() / 4))
-            position(new PVector((3 * gameManager.maxX() / 4), position().y, position().z));
+            setPositionTo(new PVector((3 * gameManager.maxX() / 4), position().y, position().z));
         if (position().x < (3 * gameManager.minX() / 4))
-            position(new PVector((3 * gameManager.minX() / 4), position().y, position().z));
+            setPositionTo(new PVector((3 * gameManager.minX() / 4), position().y, position().z));
         if (position().y > (3 * gameManager.maxY() / 4))
-            position(new PVector(position().x, (3 * gameManager.maxY() / 4), position().z));
+            setPositionTo(new PVector(position().x, (3 * gameManager.maxY() / 4), position().z));
         if (position().y < (3 * gameManager.minY() / 4))
-            position(new PVector(position().x, (3 * gameManager.minY() / 4), position().z));
+            setPositionTo(new PVector(position().x, (3 * gameManager.minY() / 4), position().z));
     }
 
-    private void rotation(float rotation) {
+    private void setRotationTo(float rotation) {
         this.rotation = rotation;
     }
 
@@ -74,7 +74,7 @@ public class Spaceship {
         return position;
     }
 
-    private void position(PVector position) {
+    private void setPositionTo(PVector position) {
         this.position = position;
     }
 
@@ -82,19 +82,11 @@ public class Spaceship {
         return this.front;
     }
 
-    public void increaseScore(int increase) {
-        this.score += increase;
-    }
-
-    public int score() {
-        return score;
-    }
-
     public float health() {
         return health;
     }
 
-    public void health(float newHealth) {
+    public void setHealthTo(float newHealth) {
         this.health = newHealth;
     }
 
@@ -110,7 +102,7 @@ public class Spaceship {
         return heat;
     }
 
-    public void heat(int heat, TimingManager timingManager) {
+    public void setHeatTo(int heat, TimingManager timingManager) {
         timingManager.heatTimestamp();
         this.heat = heat;
         if (this.heat <= 0)

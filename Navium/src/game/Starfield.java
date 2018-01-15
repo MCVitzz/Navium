@@ -24,15 +24,15 @@ public class Starfield {
     public void update(PApplet applet, ResolutionManager resolutionManager, float deltaTime) {
         float delta = deltaTime * .001F;
         for (Star star : stars) {
-            star.position(star.position().add(PVector.mult(velocity, delta)));
+            star.setPositionTo(star.position().add(PVector.mult(velocity, delta)));
             if (star.position().x > applet.width)
-                star.position(new PVector(0, applet.random(0, applet.height)));
+                star.setPositionTo(new PVector(0, applet.random(0, applet.height)));
             if (star.position().x < 0)
-                star.position(new PVector(applet.width, applet.random(0, applet.height)));
+                star.setPositionTo(new PVector(applet.width, applet.random(0, applet.height)));
             if (star.position().y > applet.height)
-                star.position(new PVector(applet.random(0, applet.height), 0));
+                star.setPositionTo(new PVector(applet.random(0, applet.height), 0));
             if (star.position().y < 0)
-                star.position(new PVector(applet.random(0, applet.width), applet.height));
+                star.setPositionTo(new PVector(applet.random(0, applet.width), applet.height));
         }
         for (int i = stars.size(); i < numStars; i++)
             stars.add(new Star(applet, resolutionManager));
@@ -49,7 +49,6 @@ public class Starfield {
 
         Star(PApplet applet, ResolutionManager resolutionManager) {
             this.size = applet.random(resolutionManager.resolvedOfWidth(1), resolutionManager.resolvedOfWidth(3));
-
             this.position = new PVector(applet.random(0, applet.width), applet.random(0, applet.height));
         }
 
@@ -70,7 +69,7 @@ public class Starfield {
             return this.position.copy();
         }
 
-        void position(PVector position) {
+        void setPositionTo(PVector position) {
             this.position = position.copy();
         }
     }

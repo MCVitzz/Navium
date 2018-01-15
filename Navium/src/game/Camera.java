@@ -37,7 +37,7 @@ public class Camera {
         return distance;
     }
 
-    public void distance(float distance) {
+    public void setDistanceTo(float distance) {
         this.distance = distance;
     }
 

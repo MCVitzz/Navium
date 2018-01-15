@@ -19,6 +19,7 @@ public class MainApp extends PApplet {
     private Spaceship spaceship;
     private Camera camera;
     private Menu menu;
+    private HUD hud;
     private GameManager gameManager;
     private AssetManager assetManager;
     private Starfield starfield;
@@ -67,15 +68,15 @@ public class MainApp extends PApplet {
                 starfield.display(this.g);
 
                 //Updating the spaceship's position to the required one by the player and the game's speed.
-                spaceship.update(gameManager, gameManager.up(), gameManager.down(), gameManager.left(), gameManager.right(), gameManager.rotateLeft(), gameManager.rotateRight(), timingManager.deltaTime(), gameManager.stopped());
+                spaceship.update(gameManager, gameManager.up(), gameManager.down(), gameManager.left(), gameManager.right(), gameManager.rotateLeft(), gameManager.rotateRight(), timingManager.deltaTime(), gameManager.isStopped());
 
                 //Increasing the player's score
-                spaceship.increaseScore(Math.round(timingManager.deltaTime() * .1F));
+                gameManager.increaseScore(Math.round(timingManager.deltaTime() * .1F));
 
                 //Update camera to the spaceship's position
                 camera.update(spaceship.position());
                 //If the camera is shaking keep it shaking until shake time is over
-                if (gameManager.shaking()) {
+                if (gameManager.isShaking()) {
                     if (timingManager.timeSinceLastShakeTimestamp() < camera.shakeCooldown())
                         camera.shake(this, resolutionManager, spaceship.position());
                     else
@@ -98,29 +99,42 @@ public class MainApp extends PApplet {
                         boolean betweenY = isBetween(asteroid.position().y, spaceship.position().y - spaceship.radiusY(), spaceship.position().y + spaceship.radiusY());
 
                         //If the asteroid hit the player and the player is not in god mode decrease health and shake camera
-                        if (betweenX && betweenY && !gameManager.god() && asteroid.active()) {
-                            spaceship.health(spaceship.health() - 10);
+                        if (betweenX && betweenY && !gameManager.god() && asteroid.isActive()) {
+                            spaceship.setHealthTo(spaceship.health() - 10);
                             shaking(true);
                         }
 
                         //Reset position of the asteroid and their active state to true so they can be displayed.
-                        asteroid.position(generateNewCelestialPosition());
-                        asteroid.active(true);
+                        asteroid.setForceTo(new PVector());
+                        switch (asteroid.size()) {
+                            case BIG:
+                                asteroid.setHealthTo(2);
+                                break;
+                            case REGULAR:
+                                asteroid.setHealthTo(1);
+                                break;
+                            case SMAlL:
+                                asteroid.setHealthTo(1);
+                                break;
+                        }
+                        asteroid.setPositionTo(gameManager.generateNewCelestialPosition(this, camera));
+                        asteroid.setActiveTo(true);
                     }
                 }
 
                 //Displaying all Celestial Bodies, if they're active
-                for (CelestialBody celestialBody : gameManager.celestialBodies()) {
-                    if (celestialBody.active())
-                        celestialBody.display(camera, this, assetManager, spaceship.front(), gameManager.debug());
-                }
+                for (CelestialBody celestialBody : gameManager.celestialBodies())
+                    if (celestialBody.isActive())
+                        celestialBody.display(camera, this, assetManager, spaceship.front());
+                    else
+                        System.out.println(1);
 
                 //Check if we can update the heat
                 if (timingManager.timeSinceLastTimestampHeat() >= spaceship.heatCooldown())
-                    spaceship.heat(spaceship.heat() - 2, timingManager);
+                    spaceship.setHeatTo(spaceship.heat() - 2, timingManager);
 
                 //Sorting the asteroids and then reverse the order, if it's closer it'll be handled first
-                java.util.Collections.sort(gameManager.asteroids());
+                //java.util.Collections.sort(gameManager.asteroids());
                 java.util.Collections.reverse(gameManager.asteroids());
 
                 //Buffer is used to copy all Laser Bombs that need to be destroyed
@@ -135,18 +149,34 @@ public class MainApp extends PApplet {
                         laserBuffer.add(laserBomb);
 
                     //If the Laser Bomb is colliding with any asteroid the score increases, the asteroid gets deactivated and the Laser Bomb gets added to the buffer to get destroyed
-                    for (Asteroid asteroid : gameManager.asteroids())
-                        if (laserBomb.isCollidingWith(resolutionManager, asteroid)) {
-                            spaceship.increaseScore(50);
-                            asteroid.active(false);
-                            laserBuffer.add(laserBomb);
+                    for (Asteroid asteroid : gameManager.asteroids()) {
+                        float radius = 350;
+                        switch (asteroid.size()) {
+                            case BIG:
+                                radius = 300;
+                                break;
+                            case REGULAR:
+                                radius = 250;
+                                break;
+                            case SMAlL:
+                                radius = 200;
+                                break;
+                        }
+                        if (laserBomb.hit(asteroid, radius) && asteroid.isActive()) {
+                            asteroid.setHealthTo(asteroid.health() - 1);
+                            if (asteroid.health() == 0) {
+                                gameManager.increaseScore(50);
+                                asteroid.setActiveTo(false);
+                            }
+                            if (asteroid.size() != Asteroid.Size.SMAlL)
+                                laserBuffer.add(laserBomb);
                             break;
                         }
+                    }
                 }
 
                 //We now send the buffer to the Game Manager to get destroyed
                 gameManager.removeLaserBombs(laserBuffer);
-
 
 
                 ArrayList<AntiGravitationalMissile> antiGravitationalMissileBuffer = new ArrayList<>();
@@ -161,22 +191,39 @@ public class MainApp extends PApplet {
                 gameManager.removeAntiGravitationalMissiles(antiGravitationalMissileBuffer);
 
                 resetMatrix();
-
-                //Draw the HUD elements
-                HUD.drawHealth(spaceship.health(), this, resolutionManager);
-                HUD.drawHeat(spaceship.heat(), this, resolutionManager);
-                HUD.drawCrosshair(this, assetManager);
-                HUD.drawScore(spaceship.score(), this, resolutionManager);
+                hud.drawCockpit(this, assetManager);
+                hud.drawHealth(spaceship.health(), this, resolutionManager, assetManager);
+                hud.drawHeat(spaceship.heat(), this, resolutionManager, assetManager);
+                hud.drawCrosshair(this, assetManager);
+                hud.drawScore(gameManager.score(), this, resolutionManager, assetManager);
                 if (gameManager.indicators())
-                    HUD.drawVariables(this, gameManager, resolutionManager);
+                    hud.drawVariables(this, gameManager, resolutionManager);
+
+                for (int i = gameManager.asteroids().size(); i <= gameManager.maxAsteroids(); i++) {
+                    int sz = Math.round(random(1, 3));
+                    Asteroid.Size size = Asteroid.Size.REGULAR;
+                    switch (sz) {
+                        case 1:
+                            size = Asteroid.Size.SMAlL;
+                            break;
+                        case 2:
+                            size = Asteroid.Size.REGULAR;
+                            break;
+                        case 3:
+                            size = Asteroid.Size.BIG;
+                            break;
+                    }
+                    gameManager.addAsteroid(new Asteroid(gameManager.generateNewCelestialPosition(this, camera), this, resolutionManager, size));
+                }
 
                 //If health is equal to or below zero, the game state is changed to Game Over
                 if (spaceship.health() <= 0)
                     setState(States.GAME_OVER);
+
                 break;
             case GAME_OVER:
-            //Writing game over on the center of the screen
-            pushStyle();
+                //Writing game over on the center of the screen
+                pushStyle();
             {
                 textMode(CENTER);
                 textSize(15);
@@ -189,31 +236,31 @@ public class MainApp extends PApplet {
 
     public void keyPressed() {
         if (key == 'a')
-            gameManager.left(true);
+            gameManager.setLeftTo(true);
         if (key == 'd')
-            gameManager.right(true);
+            gameManager.setRightTo(true);
         if (key == 'w')
-            gameManager.up(true);
+            gameManager.setUpTo(true);
         if (key == 's')
-            gameManager.down(true);
+            gameManager.setDownTo(true);
         if (key == 'q')
-            gameManager.rotateLeft(true);
+            gameManager.setRotateLeftTo(true);
         if (key == 'e')
-            gameManager.rotateRight(true);
+            gameManager.setRotateRightTo(true);
         if (key == 'f')
-            gameManager.fuzzy(!gameManager.fuzzy());
+            gameManager.setFuzzyTo(!gameManager.isFuzzy());
         if (key == 'b')
-            gameManager.debug(!gameManager.debug());
+            gameManager.increaseScore(10000);
         if (key == 'z')
-            gameManager.stopped(!gameManager.stopped());
+            gameManager.setStoppedTo(!gameManager.isStopped());
         if (key == 'i')
-            gameManager.indicators(!gameManager.indicators());
+            gameManager.setIndicatorsTo(!gameManager.indicators());
         if (key == 'g')
-            gameManager.god(!gameManager.god());
+            gameManager.setGodTo(!gameManager.god());
         if (key == 'p')
             saveFrame("screenshots/screenShot-#####.jpg");
         if (key == 'r') {
-            if (gameManager.zoomed())
+            if (gameManager.isZoomed())
                 zoomOut();
             else
                 zoomIn();
@@ -222,17 +269,17 @@ public class MainApp extends PApplet {
 
     public void keyReleased() {
         if (key == 'a')
-            gameManager.left(false);
+            gameManager.setLeftTo(false);
         if (key == 'd')
-            gameManager.right(false);
+            gameManager.setRightTo(false);
         if (key == 'w')
-            gameManager.up(false);
+            gameManager.setUpTo(false);
         if (key == 's')
-            gameManager.down(false);
+            gameManager.setDownTo(false);
         if (key == 'q')
-            gameManager.rotateLeft(false);
+            gameManager.setRotateLeftTo(false);
         if (key == 'e')
-            gameManager.rotateRight(false);
+            gameManager.setRotateRightTo(false);
     }
 
     public void mousePressed() {
@@ -255,18 +302,9 @@ public class MainApp extends PApplet {
                 break;
             case RUNNING:
                 if (mouseButton == RIGHT)
-                    gameManager.addAntiGravitationalMissile(new AntiGravitationalMissile(spaceship.position().copy(), resolutionManager));
-                else if (mouseButton == LEFT) {
-                    if (spaceship.heat() <= 98 || gameManager.god()) {
-
-                        //Create Laser
-                        gameManager.addLaserBomb(new LaserBomb(spaceship.position().copy(), resolutionManager));
-
-                        //Increase the heat
-                        if (!gameManager.god())
-                            spaceship.heat(spaceship.heat() + 2, timingManager);
-                    }
-                }
+                    createMissile();
+                else if (mouseButton == LEFT)
+                    createLaser();
                 break;
             case GAME_OVER:
                 setState(States.MAIN_MENU);
@@ -274,9 +312,26 @@ public class MainApp extends PApplet {
         }
     }
 
+    //This method creates a missile.
+    private void createMissile() {
+        gameManager.addAntiGravitationalMissile(new AntiGravitationalMissile(spaceship.position().copy().add(new PVector(0, 0, spaceship.front())), resolutionManager));
+    }
+
+    //This method creates a laser. Not much to it
+    private void createLaser() {
+        if (spaceship.heat() <= 98 || gameManager.god()) {
+            //Create Laser
+            gameManager.addLaserBomb(new LaserBomb(spaceship.position().copy().add(new PVector(0, 0, spaceship.front())), resolutionManager));
+
+            //Increase the heat
+            if (!gameManager.god())
+                spaceship.setHeatTo(spaceship.heat() + 2, timingManager);
+        }
+    }
+
     //This method handles all the behaviour related to the change that is about to be made
     private void setState(States state) {
-        gameManager.state(state);
+        gameManager.setStateTo(state);
         switch (gameManager.state()) {
             case MAIN_MENU:
                 cursor();
@@ -292,12 +347,13 @@ public class MainApp extends PApplet {
                 menu = null;
                 spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
                 camera = new Camera(spaceship.position(), 100);
-                createCelestials(gameManager.maxAsteroids());
-                gameManager.zoomed(false);
-                gameManager.indicators(false);
-                gameManager.fuzzy(false);
-                gameManager.debug(false);
-                gameManager.stopped(false);
+                hud = new HUD();
+                gameManager.initializeCelestialBodies();
+                gameManager.createCelestials(gameManager.maxAsteroids(), camera, this, resolutionManager);
+                gameManager.setZoomedTo(false);
+                gameManager.setIndicatorsTo(false);
+                gameManager.setFuzzyTo(false);
+                gameManager.setStoppedTo(false);
                 break;
             case PAUSE:
                 cursor();
@@ -311,29 +367,14 @@ public class MainApp extends PApplet {
         }
     }
 
-    private void createCelestials(int number) {
-        gameManager.initializeCelestialBodies();
-
-        //Generating Asteroids
-        for (int i = 0; i < number; i++)
-            gameManager.addAsteroid(new Asteroid(generateNewCelestialPosition(), this, resolutionManager));
-    }
-
     private void zoomIn() {
-        camera.distance(camera.distance() + 100);
-        gameManager.zoomed(true);
+        camera.setDistanceTo(camera.distance() + 100);
+        gameManager.setZoomedTo(true);
     }
 
     private void zoomOut() {
-        camera.distance(camera.distance() - 100);
-        gameManager.zoomed(false);
-    }
-
-    private PVector generateNewCelestialPosition() {
-        float x = random(gameManager.minX(), gameManager.maxX());
-        float y = random(gameManager.minY(), gameManager.maxY());
-        float z = random(gameManager.minZ(), gameManager.maxZ()) + camera.position().z;
-        return new PVector(x, y, z);
+        camera.setDistanceTo(camera.distance() - 100);
+        gameManager.setZoomedTo(false);
     }
 
     private boolean isBetween(float number, float min, float max) {
@@ -347,6 +388,6 @@ public class MainApp extends PApplet {
 
     private void shaking(boolean shake) {
         timingManager.shakingTimestamp();
-        gameManager.shaking(shake);
+        gameManager.setShakingTo(shake);
     }
 }

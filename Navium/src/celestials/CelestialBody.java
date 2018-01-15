@@ -1,10 +1,10 @@
 package celestials;
 
 import game.Camera;
-import utilities.AssetManager;
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;
+import utilities.AssetManager;
 
 public abstract class CelestialBody extends PhysicsObject implements Comparable<CelestialBody> {
 
@@ -13,14 +13,15 @@ public abstract class CelestialBody extends PhysicsObject implements Comparable<
 
     CelestialBody(PVector position, PVector velocity, PVector force, float mass) {
         super(position, velocity, force, mass);
-        active(true);
+        setActiveTo(true);
     }
 
     public abstract void update(float deltaTime);
 
+    //Returns width and height of draw asset
     public abstract void draw(PGraphics g, AssetManager manager);
 
-    public void display(Camera camera, PApplet applet, AssetManager manager, float front, boolean debug) {
+    public void display(Camera camera, PApplet applet, AssetManager manager, float front) {
 
         PVector transformed = transformed(camera);
 
@@ -37,10 +38,6 @@ public abstract class CelestialBody extends PhysicsObject implements Comparable<
             applet.g.pushStyle();
             {
                 draw(applet.g, manager);
-                if (debug) {
-                    applet.g.rectMode(applet.g.CENTER);
-                    applet.g.rect(0, 0, manager.asteroidImage.width * scale, manager.asteroidImage.height * scale);
-                }
             }
             applet.g.popStyle();
         }
@@ -67,11 +64,11 @@ public abstract class CelestialBody extends PhysicsObject implements Comparable<
         return Float.compare(other.position().z, this.position().z);
     }
 
-    public boolean active() {
+    public boolean isActive() {
         return active;
     }
 
-    public void active(boolean active) {
+    public void setActiveTo(boolean active) {
         this.active = active;
     }
 }
