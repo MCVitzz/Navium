@@ -6,7 +6,7 @@ public class TimingManager {
 
     //This class handles all the timing differences there are between frames, this way the game's flow doesn't depend on FPS but in time elapsed between frames
 
-    private float deltaTime, prevMillis, millis, heatTimestamp, shakeTimestamp;
+    private float deltaTime, prevMillis, millis, heatTimestamp, shakeTimestamp, hitTimestamp;
 
     public TimingManager(PApplet applet) {
         prevMillis = applet.millis();
@@ -22,6 +22,10 @@ public class TimingManager {
         heatTimestamp = millis;
     }
 
+    public void hitTimestamp() {
+        hitTimestamp = millis;
+    }
+
     public void shakingTimestamp() {
         shakeTimestamp = millis;
     }
@@ -32,6 +36,9 @@ public class TimingManager {
 
     public float timeSinceLastShakeTimestamp() {
         return millis - shakeTimestamp;
+    }
+    public float timeSinceLastHit() {
+        return millis - hitTimestamp;
     }
 
     public float deltaTime() {

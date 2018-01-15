@@ -12,7 +12,7 @@ import java.util.ArrayList;
 
 public class GameManager {
     private boolean up, down, left, right, rotateLeft, rotateRight, zoomed, fuzzy, stopped, indicators, god, shaking;
-    private int maxAsteroids, score, lastIncrease;
+    private int maxAsteroids, score, lastIncrease, hitCooldown;
     private float maxX, minX, maxY, minY, maxZ, minZ;
     private States state;
     private ArrayList<CelestialBody> celestialBodies;
@@ -22,7 +22,8 @@ public class GameManager {
 
     public GameManager(ResolutionManager resolutionManager) {
         this.zoomed = this.fuzzy = this.god = this.indicators = this.stopped = false;
-        this.maxAsteroids = Math.round(resolutionManager.resolvedOfWidth(0));
+        this.maxAsteroids = Math.round(resolutionManager.resolvedOfWidth(1000));
+        this.hitCooldown = 300;
         this.maxX = resolutionManager.resolvedOfWidth(10000);
         this.minX = resolutionManager.resolvedOfWidth(-10000);
         this.maxY = resolutionManager.resolvedOfHeight(10000);
@@ -247,6 +248,10 @@ public class GameManager {
 
     private void setMaxAsteroidsTo(int maxAsteroids) {
         this.maxAsteroids = maxAsteroids;
+    }
+
+    public int hitCooldown() {
+        return this.hitCooldown;
     }
 
 }
