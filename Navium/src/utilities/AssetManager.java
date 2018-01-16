@@ -7,7 +7,7 @@ import processing.core.PImage;
 public class AssetManager {
 
     //This class handles all the assets in the game and keeps the in memory
-    public PImage regularAsteroidImage, bigAsteroidImage, smallAsteroidImage, resumeImage, resumeHighlightedImage, quitImage, quitHighlightedImage, logoImage, playImage, crosshair, laser, cockpit, hit;
+    public PImage regularAsteroidImage, bigAsteroidImage, smallAsteroidImage, resumeImage, resumeHighlightedImage, logoImage, play, playHighlighted, highScores, back, backHighlighted, highScoresHighlighted, quit, quitHighlighted, crosshair, laser, cockpit, hit;
     public Animation antiGravitationalPellet;
     public PFont hudFont;
 
@@ -16,13 +16,18 @@ public class AssetManager {
         hit = applet.loadImage("hit.png");
         smallAsteroidImage = applet.loadImage("smallAsteroid.png");
         resumeHighlightedImage = applet.loadImage("resumeButtonHighlighted.png");
-        quitHighlightedImage = applet.loadImage("quitButtonHighlighted.png");
         resumeImage = applet.loadImage("resumeButton.png");
-        quitImage = applet.loadImage("quitButton.png");
         regularAsteroidImage = applet.loadImage("regularAsteroid.png");
+        highScores = applet.loadImage("highScores.png");
+        highScoresHighlighted = applet.loadImage("highScoresHighlighted.png");
+        back = applet.loadImage("back.png");
+        backHighlighted = applet.loadImage("backHighlighted.png");
+        quit = applet.loadImage("quit.png");
+        quitHighlighted = applet.loadImage("quitHighlighted.png");
         bigAsteroidImage = applet.loadImage("bigAsteroid.png");
         logoImage = applet.loadImage("title.png");
-        playImage = applet.loadImage("play.png");
+        play = applet.loadImage("play.png");
+        playHighlighted = applet.loadImage("playHighlighted.png");
         crosshair = applet.loadImage("crosshair.png");
         laser = applet.loadImage("laser.png");
         antiGravitationalPellet = new Animation("antiGravitationalMissile", 6, applet);

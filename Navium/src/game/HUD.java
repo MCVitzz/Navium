@@ -12,7 +12,11 @@ public class HUD {
     //This class handles the display of all the values that need to be shown on screen it won't hold such values, that is left for the Game Manager/Spaceship to do
 
     public void drawCrosshair(PApplet applet, AssetManager manager) {
-        applet.image(manager.crosshair, applet.width / 2, applet.height / 2);
+        applet.g.pushStyle();
+        {
+            applet.g.imageMode(PConstants.CENTER);
+            applet.image(manager.crosshair, applet.width / 2, applet.height / 2);
+        }
     }
 
     public void drawCockpit(PApplet applet, AssetManager assetManager) {
@@ -111,22 +115,14 @@ public class HUD {
             applet.g.text(text, resolutionManager.resolvedOfWidth(20), resolutionManager.resolvedOfHeight(y));
         }
         applet.g.popStyle();
-
     }
 
     public void drawHit(PApplet applet, AssetManager manager) {
-        applet.image(manager.hit, applet.width / 2, applet.height / 2);
-    }
-    private void gradient(float x, float y, float w, int c1, int c2, PApplet applet) {
-        for (float i = x; i <= x + w; i++) {
-            float inter = PApplet.map(i, x, x + w, 0, 1);
-            int c = applet.g.lerpColor(c1, c2, inter);
-            applet.g.pushStyle();
-            {
-                applet.g.stroke(c);
-                applet.g.line(i, y, i, y + 45);
-            }
-            applet.g.popStyle();
+        applet.g.pushStyle();
+        {
+            applet.g.imageMode(PConstants.CENTER);
+            applet.image(manager.hit, applet.width / 2, applet.height / 2);
         }
+        applet.g.popStyle();
     }
 }

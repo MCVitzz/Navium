@@ -14,10 +14,12 @@ import java.util.ArrayList;
 
 public class MainApp extends PApplet {
 
+    private SaveManager saveManager;
     private TimingManager timingManager;
     private ResolutionManager resolutionManager;
     private Spaceship spaceship;
     private Camera camera;
+    private HighScores highScores;
     private Menu menu;
     private HUD hud;
     private Pause pause;
@@ -36,6 +38,8 @@ public class MainApp extends PApplet {
     public void setup() {
         background(0);
         frameRate(120);
+        saveManager = new SaveManager();
+        saveManager.loadSaveGame(this);
         assetManager = new AssetManager(this);
         resolutionManager = new ResolutionManager(width, height);
         gameManager = new GameManager(resolutionManager);
@@ -58,7 +62,7 @@ public class MainApp extends PApplet {
                 if (gameManager.indicators())
                     text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.resolvedOfWidth(20), resolutionManager.resolvedOfHeight(20));
                 //Displaying the Menu itself
-                menu.display(this.g, assetManager);
+                menu.display(new PVector(mouseX, mouseY), this.g, assetManager);
                 break;
 
             case RUNNING:
@@ -226,13 +230,13 @@ public class MainApp extends PApplet {
             case GAME_OVER:
                 //Writing game over on the center of the screen
                 pushStyle();
-            {
-                textMode(CENTER);
-                textSize(15);
-                text("GAME OVER", width / 2, height / 2);
-            }
-            popStyle();
-            break;
+                {
+                    textMode(CENTER);
+                    textSize(15);
+                    text("GAME OVER", width / 2, height / 2);
+                }
+                popStyle();
+                break;
             case PAUSE:
                 timingManager.update(this);
                 starfield.display(g);
@@ -251,16 +255,26 @@ public class MainApp extends PApplet {
 
                 g.pushMatrix();
                 g.pushStyle();
-            {
-                g.fill(127, 30);
-                g.stroke(127, 30);
-                g.rect(0, 0, width, height);
-            }
-            g.popStyle();
-            g.popMatrix();
+                {
+                    g.fill(127, 30);
+                    g.stroke(127, 30);
+                    g.rect(0, 0, width, height);
+                }
+                g.popStyle();
+                g.popMatrix();
 
-            pause.display(new PVector(mouseX, mouseY), g, assetManager);
-            break;
+                pause.display(new PVector(mouseX, mouseY), g, assetManager);
+                break;
+            case HIGHSCORES:
+                //Updating the Timing Manager, so that the game has a refreshed millis() count
+                timingManager.update(this);
+                //Updating the starfield and displaying it
+                starfield.update(this, resolutionManager, timingManager.deltaTime());
+                starfield.display(this.g);
+                //Displaying the FPS if the game's indicators are enable
+                //Displaying the Menu itself
+                highScores.display(this, assetManager, saveManager.saveGame().scores(), new PVector(mouseX, mouseY));
+                break;
         }
     }
 
@@ -331,6 +345,9 @@ public class MainApp extends PApplet {
                         case "play":
                             setState(States.RUNNING);
                             break;
+                        case "highScores":
+                            setState(States.HIGHSCORES);
+                            break;
                         case "quit":
                             exit();
                             break;
@@ -362,6 +379,19 @@ public class MainApp extends PApplet {
                     }
                 }
                 break;
+            case HIGHSCORES:
+                //Check if any button is clicked
+                result = highScores.checkButtons(new PVector(mouseX, mouseY));
+
+                //If it is execute the action corresponding to that button
+                if (!result.isEmpty()) {
+                    switch (result) {
+                        case "back":
+                            setState(States.MAIN_MENU);
+                            break;
+                    }
+                }
+                break;
         }
     }
 
@@ -388,6 +418,7 @@ public class MainApp extends PApplet {
             case MAIN_MENU:
                 cursor();
                 menu = new Menu(this, width / 2, 6, 3, 5);
+                highScores = null;
                 if (gameManager.celestialBodies() != null)
                     gameManager.clearCelestialBodies();
                 else
@@ -415,8 +446,14 @@ public class MainApp extends PApplet {
                 break;
             case GAME_OVER:
                 cursor();
+                saveManager.saveGame().saveScore(gameManager.score());
+                saveManager.saveSaveGame(this);
+                gameManager.increaseScore(-gameManager.score());
                 spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
                 gameManager.clearCelestialBodies();
+                break;
+            case HIGHSCORES:
+                highScores = new HighScores(this);
                 break;
 
         }

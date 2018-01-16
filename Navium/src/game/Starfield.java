@@ -15,7 +15,7 @@ public class Starfield {
 
     public Starfield(PApplet applet, ResolutionManager resolutionManager, int numStars) {
         this.numStars = numStars;
-        velocity = new PVector(applet.random(resolutionManager.resolvedOfWidth(1), resolutionManager.resolvedOfWidth(8)), applet.random(resolutionManager.resolvedOfHeight(1), resolutionManager.resolvedOfHeight(8)));
+        velocity = new PVector(applet.random(2), applet.random(1));
         this.stars = new ArrayList<>();
         for (int i = 0; i < this.numStars; i++)
             stars.add(new Star(applet, resolutionManager));
@@ -33,6 +33,8 @@ public class Starfield {
                 star.setPositionTo(new PVector(applet.random(0, applet.height), 0));
             if (star.position().y < 0)
                 star.setPositionTo(new PVector(applet.random(0, applet.width), applet.height));
+
+            star.resize(applet, resolutionManager);
         }
         for (int i = stars.size(); i < numStars; i++)
             stars.add(new Star(applet, resolutionManager));
@@ -67,6 +69,10 @@ public class Starfield {
 
         PVector position() {
             return this.position.copy();
+        }
+
+        void resize(PApplet applet, ResolutionManager resolutionManager) {
+            this.size = applet.random(resolutionManager.resolvedOfWidth(1), resolutionManager.resolvedOfWidth(3));
         }
 
         void setPositionTo(PVector position) {

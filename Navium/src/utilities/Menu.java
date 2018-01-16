@@ -1,5 +1,6 @@
 package utilities;
 
+
 import processing.core.PApplet;
 import processing.core.PGraphics;
 import processing.core.PVector;
@@ -7,30 +8,44 @@ import processing.core.PVector;
 public class Menu {
 
     //This class handles all the Menu rendering and button clicking
+    private PVector playBtn, highScorebtn, title;
 
-    private PVector playBtn, titleTitle;
-
-    public Menu(PApplet applet, float x, float parts, float titlePart, float playPart) {
-
+    public Menu(PApplet applet, float x, float parts, float titlePart, float buttonsPart) {
         //X is not necessary here, but just in case we'll use it later
-        titleTitle = new PVector(x, titlePart * applet.height / parts);
-        playBtn = new PVector(x, playPart * applet.height / parts);
+        title = new PVector(x, titlePart * applet.height / parts);
+        playBtn = new PVector(applet.width / 8 * 2, buttonsPart * applet.height / parts);
+        highScorebtn = new PVector(applet.width / 8 * 6, buttonsPart * applet.height / parts);
     }
 
-    public void display(PGraphics graphics, AssetManager assetManager) {
-        graphics.imageMode(graphics.CENTER);
-        //Draw Title
-        graphics.image(assetManager.logoImage, titleTitle.x, titleTitle.y);
-        //Draw Play
-        graphics.image(assetManager.playImage, playBtn.x, playBtn.y);
+    public void display(PVector mouse, PGraphics graphics, AssetManager assetManager) {
+        graphics.pushStyle();
+        {
+            String button = checkButtons(mouse);
+            graphics.imageMode(graphics.CENTER);
+            graphics.image(assetManager.logoImage, title.x, title.y);
+            switch (button) {
+                case "play":
+                    graphics.image(assetManager.playHighlighted, playBtn.x, playBtn.y);
+                    graphics.image(assetManager.highScores, highScorebtn.x, highScorebtn.y);
+                    break;
+                case "highScores":
+                    graphics.image(assetManager.play, playBtn.x, playBtn.y);
+                    graphics.image(assetManager.highScoresHighlighted, highScorebtn.x, highScorebtn.y);
+                default:
+                    graphics.image(assetManager.play, playBtn.x, playBtn.y);
+                    graphics.image(assetManager.highScores, highScorebtn.x, highScorebtn.y);
+                    break;
+            }
+        }
+        graphics.popStyle();
     }
 
     public String checkButtons(PVector mouseVector) {
-        int pixelRadius = 100;
         String result = "";
-        if (playBtn.dist(mouseVector) <= pixelRadius)
+        if (Math.abs(mouseVector.x - playBtn.x) <= 400 && Math.abs(mouseVector.y - playBtn.y) <= 200)
             result = "play";
-
+        if (Math.abs(mouseVector.x - highScorebtn.x) <= 650 && Math.abs(mouseVector.y - highScorebtn.y) <= 200)
+            result = "highScores";
         return result;
     }
 }
