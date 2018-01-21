@@ -1,18 +1,13 @@
-import celestials.AntiGravitationalMissile;
-import celestials.Asteroid;
-import celestials.CelestialBody;
-import celestials.LaserBomb;
-import game.Camera;
-import game.HUD;
-import game.Spaceship;
-import game.Starfield;
+package game;
+
+import celestials.*;
 import processing.core.PApplet;
 import processing.core.PVector;
 import utilities.*;
 
 import java.util.ArrayList;
 
-public class MainApp extends PApplet {
+public class Navium extends PApplet {
 
     private SaveManager saveManager;
     private TimingManager timingManager;
@@ -28,11 +23,12 @@ public class MainApp extends PApplet {
     private Starfield starfield;
 
     public static void main(String[] args) {
-        PApplet.main(new String[]{MainApp.class.getName()});
+        PApplet.main(new String[]{Navium.class.getName()});
     }
 
     public void settings() {
         fullScreen(P2D);
+        smooth(8);
     }
 
     public void setup() {
@@ -68,6 +64,9 @@ public class MainApp extends PApplet {
             case RUNNING:
                 //Updating the Timing Manager, so that the game has a refreshed millis() count
                 timingManager.update(this);
+                //Buffer is used to copy all Laser Bombs and Power-Ups that need to be destroyed
+                ArrayList<LaserBomb> laserBuffer = new ArrayList<>();
+                ArrayList<PowerUp> powerUpBuffer = new ArrayList<>();
                 //Updating the starfield and displaying it
                 starfield.update(this, resolutionManager, timingManager.deltaTime());
                 starfield.display(this.g);
@@ -77,6 +76,28 @@ public class MainApp extends PApplet {
 
                 //Increasing the player's score
                 gameManager.increaseScore(Math.round(timingManager.deltaTime() * .1F));
+
+                if (gameManager.score() >= gameManager.lastIncreaseMaxAsteroids() + 10000) {
+                    gameManager.setMaxAsteroidsTo(gameManager.maxAsteroids() + 10);
+                    gameManager.setLastIncreaseMaxAsteroidsTo(gameManager.score());
+                }
+
+                if (gameManager.score() >= gameManager.lastIncreasePowerUps() + 5000 && gameManager.powerUps().size() < 10) {
+
+                    PowerUp.IEffect effect = new PowerUp.HealthEffect();
+
+                    switch (Math.round(random(1, 2))) {
+                        case 1:
+                            effect = new PowerUp.MissileEffect();
+                            break;
+                        case 2:
+                            effect = new PowerUp.HealthEffect();
+                            break;
+                    }
+
+                    gameManager.addPowerUp(new PowerUp(gameManager.generateNewCelestialPosition(this, camera), effect));
+                    gameManager.setLastIncreaseMaxAsteroidsTo(gameManager.score());
+                }
 
                 //Update camera to the spaceship's position
                 camera.update(spaceship.position());
@@ -110,7 +131,7 @@ public class MainApp extends PApplet {
                         }
 
                         //Reset position of the asteroid and their active state to true so they can be displayed.
-                        asteroid.setForceTo(new PVector());
+                        asteroid.resetPhysics();
                         switch (asteroid.size()) {
                             case BIG:
                                 asteroid.setHealthTo(2);
@@ -127,6 +148,14 @@ public class MainApp extends PApplet {
                     }
                 }
 
+                for (PowerUp powerUp : gameManager.powerUps()) {
+                    //Updating the Asteroids
+                    powerUp.update(timingManager.deltaTime() * .001F);
+                    //If the powerUp passed by the player
+                    if (powerUp.passedBy(camera, spaceship.front()))
+                        powerUpBuffer.add(powerUp);
+                }
+
                 //Displaying all Celestial Bodies, if they're active
                 for (CelestialBody celestialBody : gameManager.celestialBodies())
                     if (celestialBody.isActive())
@@ -140,8 +169,6 @@ public class MainApp extends PApplet {
                 //java.util.Collections.sort(gameManager.asteroids());
                 java.util.Collections.reverse(gameManager.asteroids());
 
-                //Buffer is used to copy all Laser Bombs that need to be destroyed
-                ArrayList<LaserBomb> laserBuffer = new ArrayList<>();
 
                 for (LaserBomb laserBomb : gameManager.laserBombs()) {
                     //Updating the speed
@@ -150,6 +177,8 @@ public class MainApp extends PApplet {
                     //If the Laser Bomb is further than the furthest possible value of asteroid generation it missed all possible asteroids, it can be added to the buffer to get destroyed
                     if (laserBomb.position().z > spaceship.position().z + gameManager.maxZ())
                         laserBuffer.add(laserBomb);
+
+                    boolean broken = false;
 
                     //If the Laser Bomb is colliding with any asteroid the score increases, the asteroid gets deactivated and the Laser Bomb gets added to the buffer to get destroyed
                     for (Asteroid asteroid : gameManager.asteroids()) {
@@ -174,6 +203,20 @@ public class MainApp extends PApplet {
                             }
                             if (asteroid.size() != Asteroid.Size.SMAlL)
                                 laserBuffer.add(laserBomb);
+                            broken = true;
+                            break;
+                        }
+                    }
+
+                    if (broken) continue;
+
+
+                    for (PowerUp powerUp : gameManager.powerUps()) {
+                        if (laserBomb.hit(powerUp, 250)) {
+                            timingManager.hitTimestamp();
+                            powerUp.apply(spaceship);
+                            powerUpBuffer.add(powerUp);
+                            laserBuffer.add(laserBomb);
                             break;
                         }
                     }
@@ -181,15 +224,21 @@ public class MainApp extends PApplet {
 
                 //We now send the buffer to the Game Manager to get destroyed
                 gameManager.removeLaserBombs(laserBuffer);
+                gameManager.removePowerUps(powerUpBuffer);
 
 
                 ArrayList<AntiGravitationalMissile> antiGravitationalMissileBuffer = new ArrayList<>();
 
                 for (AntiGravitationalMissile antiGravitationalMissile : gameManager.antiGravitationalMissiles()) {
                     antiGravitationalMissile.update(timingManager.deltaTime() * .1F);
-                    if (antiGravitationalMissile.position().z > spaceship.position().z + 500) {
+                    if (antiGravitationalMissile.position().z > spaceship.position().z + 1500 && !antiGravitationalMissile.hasExploded()) {
                         antiGravitationalMissile.explode(gameManager.celestialBodies(), resolutionManager);
-                        antiGravitationalMissileBuffer.add(antiGravitationalMissile);
+                        antiGravitationalMissile.markMissileExplosionTimestamp(timingManager.millis());
+                    }
+                    if (antiGravitationalMissile.hasExploded()) {
+                        antiGravitationalMissile.explode(gameManager.celestialBodies(), resolutionManager);
+                        if (timingManager.millis() - antiGravitationalMissile.missileExplosionTimestamp() >= antiGravitationalMissile.missileExplosionCooldown())
+                            antiGravitationalMissileBuffer.add(antiGravitationalMissile);
                     }
                 }
                 gameManager.removeAntiGravitationalMissiles(antiGravitationalMissileBuffer);
@@ -228,11 +277,17 @@ public class MainApp extends PApplet {
 
                 break;
             case GAME_OVER:
+                timingManager.update(this);
+                starfield.display(g);
+                starfield.update(this, resolutionManager, timingManager.deltaTime());
+                camera.update(spaceship.position());
+                camera.apply(this);
                 //Writing game over on the center of the screen
+                resetMatrix();
                 pushStyle();
                 {
-                    textMode(CENTER);
-                    textSize(15);
+                    textAlign(CENTER);
+                    textSize(36);
                     text("GAME OVER", width / 2, height / 2);
                 }
                 popStyle();
@@ -255,16 +310,16 @@ public class MainApp extends PApplet {
 
                 g.pushMatrix();
                 g.pushStyle();
-                {
-                    g.fill(127, 30);
-                    g.stroke(127, 30);
-                    g.rect(0, 0, width, height);
-                }
-                g.popStyle();
-                g.popMatrix();
+            {
+                g.fill(127, 30);
+                g.stroke(127, 30);
+                g.rect(0, 0, width, height);
+            }
+            g.popStyle();
+            g.popMatrix();
 
-                pause.display(new PVector(mouseX, mouseY), g, assetManager);
-                break;
+            pause.display(new PVector(mouseX, mouseY), g, assetManager);
+            break;
             case HIGHSCORES:
                 //Updating the Timing Manager, so that the game has a refreshed millis() count
                 timingManager.update(this);
@@ -355,9 +410,14 @@ public class MainApp extends PApplet {
                 }
                 break;
             case RUNNING:
-                if (mouseButton == RIGHT)
-                    createMissile();
-                else if (mouseButton == LEFT)
+                if (mouseButton == RIGHT) {
+                    if (gameManager.god()) {
+                        createMissile();
+                    } else if (spaceship.missiles() > 0) {
+                        createMissile();
+                        spaceship.setMissilesTo(spaceship.missiles() - 1);
+                    }
+                } else if (mouseButton == LEFT)
                     createLaser();
                 break;
             case GAME_OVER:
@@ -429,7 +489,7 @@ public class MainApp extends PApplet {
                 noCursor();
                 if (gameManager.state() == States.MAIN_MENU) {
                     menu = null;
-                    spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
+                    spaceship = new Spaceship(new PVector(width / 2 + 200, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
                     camera = new Camera(spaceship.position(), 100);
                     hud = new HUD();
                     gameManager.initializeCelestialBodies();
