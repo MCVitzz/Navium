@@ -7,7 +7,7 @@ import processing.core.PImage;
 public class AssetManager {
 
     //This class handles all the assets in the game and keeps the in memory
-    public PImage regularAsteroidImage, bigAsteroidImage, smallAsteroidImage, resumeImage, resumeHighlightedImage, logoImage, play, playHighlighted, highScores, back, backHighlighted, highScoresHighlighted, quit, quitHighlighted, crosshair, laser, cockpit, hit;
+    public PImage regularAsteroidImage, bigAsteroidImage, smallAsteroidImage, resumeImage, resumeHighlightedImage, logoImage, play, playHighlighted, highScores, back, backHighlighted, healthPowerUp, missilePowerUp, highScoresHighlighted, quit, quitHighlighted, crosshair, laser, cockpit, hit;
     public Animation antiGravitationalPellet;
     public PFont hudFont;
 
@@ -16,6 +16,8 @@ public class AssetManager {
         hit = applet.loadImage("hit.png");
         smallAsteroidImage = applet.loadImage("smallAsteroid.png");
         resumeHighlightedImage = applet.loadImage("resumeButtonHighlighted.png");
+        healthPowerUp = applet.loadImage("healthPowerUp.png");
+        missilePowerUp = applet.loadImage("missilePowerUp.png");
         resumeImage = applet.loadImage("resumeButton.png");
         regularAsteroidImage = applet.loadImage("regularAsteroid.png");
         highScores = applet.loadImage("highScores.png");

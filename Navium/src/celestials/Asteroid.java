@@ -13,7 +13,7 @@ public class Asteroid extends CelestialBody {
     private float health;
 
     public Asteroid(PVector position, PApplet applet, ResolutionManager resolutionManager, Size size) {
-        super(position, new PVector(applet.random(resolutionManager.resolvedOfWidth(-0), resolutionManager.resolvedOfWidth(0)), applet.random(resolutionManager.resolvedOfWidth(-0), resolutionManager.resolvedOfWidth(0)), 0), new PVector(), 10F);
+        super(position, new PVector(applet.random(resolutionManager.resolvedOf(-0), resolutionManager.resolvedOf(0)), applet.random(resolutionManager.resolvedOf(-0), resolutionManager.resolvedOf(0)), 0), new PVector(), 10F);
         this.size = size;
         switch (this.size) {
             case BIG:

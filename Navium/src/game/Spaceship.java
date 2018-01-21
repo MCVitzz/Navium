@@ -10,44 +10,44 @@ public class Spaceship {
     //This class is equivalent to the 'Player' class in most games
 
     private PVector position;
-    private int heat;
+    private int heat, missiles;
     private float front, speed, controlSpeed, health, radiusX, radiusY, heatCooldown, rotation;
 
     public Spaceship(PVector position, float front, ResolutionManager resolutionManager) {
         this.position = position.copy();
         this.front = front;
         this.rotation = 0;
-        this.radiusX = resolutionManager.resolvedOfWidth(400);
-        this.radiusY = resolutionManager.resolvedOfHeight(225);
-        this.speed = resolutionManager.resolvedOfWidth(2);
-        this.controlSpeed = resolutionManager.resolvedOfHeight(2);
+        this.radiusX = resolutionManager.resolvedOf(400);
+        this.radiusY = resolutionManager.resolvedOf(225);
+        this.speed = resolutionManager.resolvedOf(2);
+        this.controlSpeed = resolutionManager.resolvedOf(2);
         this.heatCooldown = 1500;
         this.health = 100;
         this.heat = 0;
     }
 
-    public void update(GameManager gameManager, boolean up, boolean down, boolean left, boolean right, boolean rotateLeft, boolean rotateRight, float deltaTime, boolean stopped) {
+    public void update(GameManager gameManager,  float deltaTime) {
 
         float controlDistance = deltaTime * controlSpeed;
 
         float distance = deltaTime * speed;
 
-        if (stopped)
+        if (gameManager.isStopped())
             distance = 0;
 
         PVector velocity = new PVector(0, 0, distance);
 
-        if (rotateLeft)
+        if (gameManager.rotateLeft())
             setRotationTo(rotation() + (3.14F / 8142) * deltaTime);
-        if (rotateRight)
+        if (gameManager.rotateRight())
             setRotationTo(rotation() - (3.14F / 8142) * deltaTime);
-        if (left)
+        if (gameManager.left())
             velocity.x -= controlDistance;
-        if (right)
+        if (gameManager.right())
             velocity.x += controlDistance;
-        if (up)
+        if (gameManager.up())
             velocity.y -= controlDistance;
-        if (down)
+        if (gameManager.down())
             velocity.y += controlDistance;
 
         setPositionTo(PVector.add(position(), velocity));
@@ -82,12 +82,22 @@ public class Spaceship {
         return this.front;
     }
 
+    public int missiles() {
+        return this.missiles;
+    }
+
+    public void setMissilesTo(int missiles) {
+        this.missiles = missiles;
+    }
+
     public float health() {
         return health;
     }
 
     public void setHealthTo(float newHealth) {
         this.health = newHealth;
+        if (health() > 100)
+            health = 100;
     }
 
     public float radiusX() {

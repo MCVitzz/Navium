@@ -25,9 +25,16 @@ public class PowerUp extends CelestialBody {
     public void apply(Spaceship spaceship) {
         effect.apply(spaceship);
     }
-}
-    public static class HealthEffect extends Effect {
-        public void apply(Spaceship spaceship) {
+
+    //We need an interface here because we can't declare an abstract class in the class' scope
+
+    public interface Effect {
+        void apply(Spaceship ship);
+        void draw(PGraphics g, AssetManager assetManager);
+    }
+
+    public static class HealthEffect implements Effect {
+        public void apply(Spaceship spaceship){
             spaceship.setHealthTo(spaceship.health() + 10);
         }
 
@@ -36,8 +43,8 @@ public class PowerUp extends CelestialBody {
         }
     }
 
-    public static class MissileEffect extends Effect {
-        public void apply(Spaceship spaceship) {
+    public static class MissileEffect implements Effect {
+        public void apply(Spaceship spaceship){
             spaceship.setMissilesTo(spaceship.missiles() + 1);
         }
 
@@ -45,9 +52,4 @@ public class PowerUp extends CelestialBody {
             g.image(assetManager.missilePowerUp, 0, 0);
         }
     }
-
-    public abstract class Effect {
-        public abstract void apply(Spaceship spaceship);
-
-        public abstract void draw(PGraphics g, AssetManager assetManager);
-    }
+}

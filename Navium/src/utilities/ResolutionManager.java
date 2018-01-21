@@ -1,27 +1,29 @@
 package utilities;
 
+import processing.core.PApplet;
+
 public class ResolutionManager {
 
     //This class handles all the resolution difference there may be in all the PCs this game might be played in
 
-    //It basically uses a proportional rule
+    //It basically has a comparator (1920 or 1080) and a comparable(min(width, height))
 
-    private int width, height;
-    private float currentWidth, currentHeight;
+
+    private int comparator, comparable;
 
     public ResolutionManager(float currentWidth, float currentHeight) {
-        width = 1920;
-        height = 1080;
-        this.currentWidth = currentWidth;
-        this.currentHeight = currentHeight;
+        int width = 1920;
+        int height = 1080;
+
+        comparator = Math.round(PApplet.min(currentWidth, currentHeight));
+        if(comparator == currentHeight)
+            comparable = height;
+        else comparable = width;
+
     }
 
-    public float resolvedOfWidth(float number) {
-        return (currentWidth * number) / width;
-    }
-
-    public float resolvedOfHeight(float number) {
-        return (currentHeight * number) / height;
+    public float resolvedOf(float number) {
+        return (comparator * number) / comparable;
     }
 
 }

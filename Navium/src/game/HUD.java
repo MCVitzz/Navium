@@ -41,9 +41,9 @@ public class HUD {
             applet.g.text("Health", 1280, 940);
             applet.g.rectMode(applet.g.CORNER);
             applet.g.fill(127, 255, 232, 20);
-            applet.g.rect(resolutionManager.resolvedOfWidth(1280), resolutionManager.resolvedOfHeight(950), resolutionManager.resolvedOfWidth(350), resolutionManager.resolvedOfHeight(25));
+            applet.g.rect(resolutionManager.resolvedOf(1280), resolutionManager.resolvedOf(950), resolutionManager.resolvedOf(350), resolutionManager.resolvedOf(25));
             applet.g.fill(applet.color(0, 255, 210), 50);
-            applet.g.rect(resolutionManager.resolvedOfWidth(1280), resolutionManager.resolvedOfHeight(950), resolutionManager.resolvedOfWidth((health * 350) / 100), resolutionManager.resolvedOfHeight(25));
+            applet.g.rect(resolutionManager.resolvedOf(1280), resolutionManager.resolvedOf(950), resolutionManager.resolvedOf((health * 350) / 100), resolutionManager.resolvedOf(25));
         }
         applet.g.popStyle();
         applet.g.popMatrix();
@@ -59,9 +59,9 @@ public class HUD {
             applet.g.text("Heat", 1280, 1015);
             applet.g.rectMode(applet.g.CORNER);
             applet.g.fill(255, 50, 50, 20);
-            applet.g.rect(resolutionManager.resolvedOfWidth(1280), resolutionManager.resolvedOfHeight(1025), resolutionManager.resolvedOfWidth(350), resolutionManager.resolvedOfHeight(25));
+            applet.g.rect(resolutionManager.resolvedOf(1280), resolutionManager.resolvedOf(1025), resolutionManager.resolvedOf(350), resolutionManager.resolvedOf(25));
             applet.g.fill(applet.color(255, 0, 0), 50);
-            applet.g.rect(resolutionManager.resolvedOfWidth(1280), resolutionManager.resolvedOfHeight(1025), resolutionManager.resolvedOfWidth((heat * 350) / 100), resolutionManager.resolvedOfHeight(25));
+            applet.g.rect(resolutionManager.resolvedOf(1280), resolutionManager.resolvedOf(1025), resolutionManager.resolvedOf((heat * 350) / 100), resolutionManager.resolvedOf(25));
         }
         applet.g.popStyle();
         applet.g.popMatrix();
@@ -74,8 +74,8 @@ public class HUD {
             applet.g.stroke(255, 255, 255, 33);
             applet.g.fill(127, 127, 127, 95);
             applet.g.textFont(assetManager.hudFont);
-            applet.g.text("Score", resolutionManager.resolvedOfWidth(290), resolutionManager.resolvedOfHeight(990));
-            applet.g.text(new DecimalFormat("#.#").format(score), resolutionManager.resolvedOfWidth(290), resolutionManager.resolvedOfHeight(1025));
+            applet.g.text("Score", resolutionManager.resolvedOf(290), resolutionManager.resolvedOf(990));
+            applet.g.text(new DecimalFormat("#.#").format(score), resolutionManager.resolvedOf(290), resolutionManager.resolvedOf(1025));
         }
         applet.g.popStyle();
         applet.g.popMatrix();
@@ -85,7 +85,7 @@ public class HUD {
 
         //Here we draw the indicators to all the control variables
 
-        applet.g.text("FPS: " + Float.toString(Math.round(applet.frameRate)), resolutionManager.resolvedOfWidth(20), resolutionManager.resolvedOfHeight(20));
+        applet.g.text("FPS: " + Float.toString(Math.round(applet.frameRate)), resolutionManager.resolvedOf(20), resolutionManager.resolvedOf(20));
 
         drawIndicator(gameManager.isZoomed(), "Zoomed", 80, applet, resolutionManager);
 
@@ -112,7 +112,7 @@ public class HUD {
         applet.g.pushStyle();
         {
             applet.g.fill(drawColor);
-            applet.g.text(text, resolutionManager.resolvedOfWidth(20), resolutionManager.resolvedOfHeight(y));
+            applet.g.text(text, resolutionManager.resolvedOf(20), resolutionManager.resolvedOf(y));
         }
         applet.g.popStyle();
     }

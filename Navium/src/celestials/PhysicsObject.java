@@ -14,28 +14,32 @@ public abstract class PhysicsObject {
         this.mass = mass;
     }
 
+    //Just updating the velocity and position, setting the previous position to the current position, before updating it with our velocity
     void updatePhysics(float deltaTime) {
-        if(acceleration.dist(new PVector()) > 0)
-            System.out.println("2");
         prevPosition = position().copy();
-        //Here we do something that isn't realistic but it'll look way better than if it was realistic
         velocity.add(PVector.mult(acceleration, deltaTime));
         position.add(PVector.mult(velocity, deltaTime));
     }
 
+    // F = m * a simple application
     public void applyForce(PVector applied) {
-        velocity.add(PVector.div(applied, mass));
-        //velocity = applied.copy();
+        acceleration.add(applied.mult(mass()));
     }
 
-    public void setForceTo(PVector force) {
-        this.velocity = force;
-    }
-
+    //Using the cylinder's cartesian formula to define a hit box
     public boolean hit(PhysicsObject other, float radius) {
         boolean semiCylinder = (sqr((other.position().x - this.prevPosition.x)) + sqr((other.position().y - this.prevPosition.y))) <= (sqr(radius));
         boolean zLimitation = this.prevPosition.z <= other.position().z && other.position().z < this.position().z;
-        return  semiCylinder && zLimitation;
+        return semiCylinder && zLimitation;
+    }
+
+    public float mass() {
+        return this.mass;
+    }
+
+    public void resetPhysics() {
+        velocity = new PVector();
+        acceleration = new PVector();
     }
 
     public PVector position() {
@@ -44,6 +48,10 @@ public abstract class PhysicsObject {
 
     public void setPositionTo(PVector position) {
         this.position = position;
+    }
+
+    public void dragBy(float drag) {
+        velocity.mult(drag);
     }
 
     private float sqr(float number) {

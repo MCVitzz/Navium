@@ -7,15 +7,11 @@ import utilities.ResolutionManager;
 
 public class LaserBomb extends CelestialBody {
 
-    //private PVector prevPosition;
-
     public LaserBomb(PVector position, ResolutionManager resolutionManager) {
-        super(position.copy(), new PVector(0, 0, resolutionManager.resolvedOfWidth(150)), new PVector(), Float.MIN_VALUE);
-        //this.prevPosition = position.copy();
+        super(position, new PVector(0, 0, resolutionManager.resolvedOf(150)), new PVector(), Float.MIN_VALUE);
     }
 
     public void update(float deltaTime) {
-        //prevPosition = position().copy();
         updatePhysics(deltaTime);
     }
 
@@ -23,7 +19,7 @@ public class LaserBomb extends CelestialBody {
         graphics.pushStyle();
         {
             graphics.imageMode(graphics.CENTER);
-            graphics.image(assetManager.laser, position().x, position().y);
+            graphics.image(assetManager.laser,0, 0);
         }
         graphics.popStyle();
     }

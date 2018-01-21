@@ -1,9 +1,6 @@
 package utilities;
 
-import celestials.AntiGravitationalMissile;
-import celestials.Asteroid;
-import celestials.CelestialBody;
-import celestials.LaserBomb;
+import celestials.*;
 import game.Camera;
 import processing.core.PApplet;
 import processing.core.PVector;
@@ -12,27 +9,32 @@ import java.util.ArrayList;
 
 public class GameManager {
     private boolean up, down, left, right, rotateLeft, rotateRight, zoomed, fuzzy, stopped, indicators, god, shaking;
-    private int maxAsteroids, score, lastIncrease, hitCooldown;
+    private int maxAsteroids, score, lastIncreaseMaxAsteroids, lastIncreasePowerUps, hitCooldown;
     private float maxX, minX, maxY, minY, maxZ, minZ;
     private States state;
     private ArrayList<CelestialBody> celestialBodies;
     private ArrayList<LaserBomb> laserBombs;
     private ArrayList<Asteroid> asteroids;
+    private ArrayList<PowerUp> powerUps;
     private ArrayList<AntiGravitationalMissile> antiGravitationalMissiles;
 
     public GameManager(ResolutionManager resolutionManager) {
         this.zoomed = this.fuzzy = this.god = this.indicators = this.stopped = false;
-        this.maxAsteroids = Math.round(resolutionManager.resolvedOfWidth(1000));
+        this.maxAsteroids = Math.round(resolutionManager.resolvedOf(1000));
         this.hitCooldown = 300;
-        this.maxX = resolutionManager.resolvedOfWidth(10000);
-        this.minX = resolutionManager.resolvedOfWidth(-10000);
-        this.maxY = resolutionManager.resolvedOfHeight(10000);
-        this.minY = resolutionManager.resolvedOfHeight(-10000);
-        this.maxZ = resolutionManager.resolvedOfWidth(15000);
-        this.minZ = resolutionManager.resolvedOfWidth(1500);
-        this.score = this.lastIncrease = 0;
+        this.maxX = resolutionManager.resolvedOf(10000);
+        this.minX = resolutionManager.resolvedOf(-10000);
+        this.maxY = resolutionManager.resolvedOf(10000);
+        this.minY = resolutionManager.resolvedOf(-10000);
+        this.maxZ = resolutionManager.resolvedOf(15000);
+        this.minZ = resolutionManager.resolvedOf(1500);
+        this.score = this.lastIncreaseMaxAsteroids = this.lastIncreasePowerUps = 0;
     }
 
+    public void addPowerUp(PowerUp powerUp) {
+        this.powerUps.add(powerUp);
+        this.celestialBodies.add(powerUp);
+    }
 
     public void addAntiGravitationalMissile(AntiGravitationalMissile antiGravitationalMissile) {
         this.antiGravitationalMissiles.add(antiGravitationalMissile);
@@ -54,6 +56,11 @@ public class GameManager {
         this.celestialBodies.removeAll(laserBombs);
     }
 
+    public void removePowerUps(ArrayList<PowerUp> powerUps) {
+        this.powerUps.removeAll(powerUps);
+        this.celestialBodies.removeAll(powerUps);
+    }
+
     public void removeAntiGravitationalMissiles(ArrayList<AntiGravitationalMissile> antiGravitationalMissiles) {
         this.antiGravitationalMissiles.removeAll(antiGravitationalMissiles);
         this.celestialBodies.removeAll(antiGravitationalMissiles);
@@ -61,17 +68,22 @@ public class GameManager {
 
     public void initializeCelestialBodies() {
         celestialBodies = new ArrayList<>();
+        powerUps = new ArrayList<>();
         laserBombs = new ArrayList<>();
         antiGravitationalMissiles = new ArrayList<>();
         asteroids = new ArrayList<>();
     }
 
     public ArrayList<Asteroid> asteroids() {
-        return asteroids;
+        return this.asteroids;
     }
 
     public ArrayList<LaserBomb> laserBombs() {
-        return laserBombs;
+        return this.laserBombs;
+    }
+
+    public ArrayList<PowerUp> powerUps() {
+        return this.powerUps;
     }
 
     public ArrayList<AntiGravitationalMissile> antiGravitationalMissiles() {
@@ -100,10 +112,6 @@ public class GameManager {
 
     public void increaseScore(int increase) {
         this.score += increase;
-        if (score() >= lastIncrease + 10000) {
-            setMaxAsteroidsTo(maxAsteroids() + 10);
-            this.lastIncrease = score();
-        }
     }
 
     public int score() {
@@ -246,8 +254,20 @@ public class GameManager {
         return this.maxAsteroids;
     }
 
-    private void setMaxAsteroidsTo(int maxAsteroids) {
+    public void setMaxAsteroidsTo(int maxAsteroids) {
         this.maxAsteroids = maxAsteroids;
+    }
+
+    public int lastIncreaseMaxAsteroids() {
+        return  this.lastIncreaseMaxAsteroids;
+    }
+
+    public int lastIncreasePowerUps() {
+        return  this.lastIncreasePowerUps;
+    }
+
+    public void setLastIncreaseMaxAsteroidsTo(int lastIncreaseMaxAsteroids) {
+        this.lastIncreaseMaxAsteroids = lastIncreaseMaxAsteroids;
     }
 
     public int hitCooldown() {

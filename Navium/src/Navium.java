@@ -1,6 +1,8 @@
-package game;
-
 import celestials.*;
+import game.Camera;
+import game.HUD;
+import game.Spaceship;
+import game.Starfield;
 import processing.core.PApplet;
 import processing.core.PVector;
 import utilities.*;
@@ -39,10 +41,10 @@ public class Navium extends PApplet {
         assetManager = new AssetManager(this);
         resolutionManager = new ResolutionManager(width, height);
         gameManager = new GameManager(resolutionManager);
-        starfield = new Starfield(this, resolutionManager, Math.round(resolutionManager.resolvedOfWidth(1200)));
+        starfield = new Starfield(this, resolutionManager, Math.round(resolutionManager.resolvedOf(1200)));
         timingManager = new TimingManager(this);
         setState(States.MAIN_MENU);
-        camera = new Camera(new PVector(0, 0, 0), resolutionManager.resolvedOfWidth(100));
+        camera = new Camera(new PVector(0, 0, 0), resolutionManager.resolvedOf(100));
     }
 
     public void draw() {
@@ -56,36 +58,34 @@ public class Navium extends PApplet {
                 starfield.display(this.g);
                 //Displaying the FPS if the game's indicators are enabled
                 if (gameManager.indicators())
-                    text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.resolvedOfWidth(20), resolutionManager.resolvedOfHeight(20));
+                    text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.resolvedOf(20), resolutionManager.resolvedOf(20));
                 //Displaying the Menu itself
                 menu.display(new PVector(mouseX, mouseY), this.g, assetManager);
                 break;
-
             case RUNNING:
                 //Updating the Timing Manager, so that the game has a refreshed millis() count
                 timingManager.update(this);
                 //Buffer is used to copy all Laser Bombs and Power-Ups that need to be destroyed
                 ArrayList<LaserBomb> laserBuffer = new ArrayList<>();
                 ArrayList<PowerUp> powerUpBuffer = new ArrayList<>();
+                ArrayList<AntiGravitationalMissile> antiGravitationalMissileBuffer = new ArrayList<>();
                 //Updating the starfield and displaying it
                 starfield.update(this, resolutionManager, timingManager.deltaTime());
                 starfield.display(this.g);
 
-                //Updating the spaceship's position to the required one by the player and the game's speed.
-                spaceship.update(gameManager, gameManager.up(), gameManager.down(), gameManager.left(), gameManager.right(), gameManager.rotateLeft(), gameManager.rotateRight(), timingManager.deltaTime(), gameManager.isStopped());
+                //Updating the spaceship's position to the required by the input and the game's speed.
+                spaceship.update(gameManager, timingManager.deltaTime());
 
-                //Increasing the player's score
+                //Increasing the player's score and scaling the difficulty of the game according to it
                 gameManager.increaseScore(Math.round(timingManager.deltaTime() * .1F));
-
                 if (gameManager.score() >= gameManager.lastIncreaseMaxAsteroids() + 10000) {
                     gameManager.setMaxAsteroidsTo(gameManager.maxAsteroids() + 10);
                     gameManager.setLastIncreaseMaxAsteroidsTo(gameManager.score());
                 }
-
+                //Creating Power-Ups
                 if (gameManager.score() >= gameManager.lastIncreasePowerUps() + 5000 && gameManager.powerUps().size() < 10) {
-
-                    PowerUp.IEffect effect = new PowerUp.HealthEffect();
-
+                    PowerUp.Effect effect = new PowerUp.HealthEffect();
+                    //randomizing the effect for the new Power-Up and creating it
                     switch (Math.round(random(1, 2))) {
                         case 1:
                             effect = new PowerUp.MissileEffect();
@@ -94,7 +94,6 @@ public class Navium extends PApplet {
                             effect = new PowerUp.HealthEffect();
                             break;
                     }
-
                     gameManager.addPowerUp(new PowerUp(gameManager.generateNewCelestialPosition(this, camera), effect));
                     gameManager.setLastIncreaseMaxAsteroidsTo(gameManager.score());
                 }
@@ -130,7 +129,7 @@ public class Navium extends PApplet {
                             shaking(true);
                         }
 
-                        //Reset position of the asteroid and their active state to true so they can be displayed.
+                        //Reset everything that is PhysicsBased (position, velocity, acceleration) and it's active state to true so that the asteroid can be displayed.
                         asteroid.resetPhysics();
                         switch (asteroid.size()) {
                             case BIG:
@@ -149,35 +148,33 @@ public class Navium extends PApplet {
                 }
 
                 for (PowerUp powerUp : gameManager.powerUps()) {
-                    //Updating the Asteroids
                     powerUp.update(timingManager.deltaTime() * .001F);
-                    //If the powerUp passed by the player
+                    //If the Power-Up passed by the player
                     if (powerUp.passedBy(camera, spaceship.front()))
                         powerUpBuffer.add(powerUp);
                 }
 
-                //Displaying all Celestial Bodies, if they're active
+                //Displaying all active Celestial Bodies
                 for (CelestialBody celestialBody : gameManager.celestialBodies())
                     if (celestialBody.isActive())
                         celestialBody.display(camera, this, assetManager, spaceship.front());
 
-                //Check if we can update the heat
+                //Check if we can decrease the heat
                 if (timingManager.timeSinceLastTimestampHeat() >= spaceship.heatCooldown())
                     spaceship.setHeatTo(spaceship.heat() - 2, timingManager);
 
                 //Sorting the asteroids and then reverse the order, if it's closer it'll be handled first
-                //java.util.Collections.sort(gameManager.asteroids());
                 java.util.Collections.reverse(gameManager.asteroids());
 
 
                 for (LaserBomb laserBomb : gameManager.laserBombs()) {
-                    //Updating the speed
                     laserBomb.update(timingManager.deltaTime() * .1F);
 
                     //If the Laser Bomb is further than the furthest possible value of asteroid generation it missed all possible asteroids, it can be added to the buffer to get destroyed
                     if (laserBomb.position().z > spaceship.position().z + gameManager.maxZ())
                         laserBuffer.add(laserBomb);
 
+                    //Just a flag, when the laser hits an Asteroid we can stop making calculations with it for the time being because it already hit something and it can't hit more than one object at the same time, when it's set to true we skip this iteration and start with the next one
                     boolean broken = false;
 
                     //If the Laser Bomb is colliding with any asteroid the score increases, the asteroid gets deactivated and the Laser Bomb gets added to the buffer to get destroyed
@@ -211,6 +208,7 @@ public class Navium extends PApplet {
                     if (broken) continue;
 
 
+                    //If the Laser Bomb is colliding with any Power-Up the score increases, the Power-Up gets added to the buffer to be destroyed and the Laser Bomb gets added to the buffer to get destroyed
                     for (PowerUp powerUp : gameManager.powerUps()) {
                         if (laserBomb.hit(powerUp, 250)) {
                             timingManager.hitTimestamp();
@@ -222,25 +220,26 @@ public class Navium extends PApplet {
                     }
                 }
 
-                //We now send the buffer to the Game Manager to get destroyed
-                gameManager.removeLaserBombs(laserBuffer);
-                gameManager.removePowerUps(powerUpBuffer);
-
-
-                ArrayList<AntiGravitationalMissile> antiGravitationalMissileBuffer = new ArrayList<>();
 
                 for (AntiGravitationalMissile antiGravitationalMissile : gameManager.antiGravitationalMissiles()) {
                     antiGravitationalMissile.update(timingManager.deltaTime() * .1F);
+                    //If the Missile is further away from the ship than 1500 it can explode, if it hasn't already, we detonate it and mark the millis to know when to destroy it
                     if (antiGravitationalMissile.position().z > spaceship.position().z + 1500 && !antiGravitationalMissile.hasExploded()) {
-                        antiGravitationalMissile.explode(gameManager.celestialBodies(), resolutionManager);
+                        antiGravitationalMissile.detonate(gameManager.celestialBodies(), resolutionManager);
                         antiGravitationalMissile.markMissileExplosionTimestamp(timingManager.millis());
                     }
+                    //If it has exploded we just "keep detonating it" this applies a continuous force on the nearby celestialBodies, creating an accelerating effect
                     if (antiGravitationalMissile.hasExploded()) {
-                        antiGravitationalMissile.explode(gameManager.celestialBodies(), resolutionManager);
+                        antiGravitationalMissile.detonate(gameManager.celestialBodies(), resolutionManager);
+                        //If the Missile is past it's exploding time we add it to the buffer to be destroyed
                         if (timingManager.millis() - antiGravitationalMissile.missileExplosionTimestamp() >= antiGravitationalMissile.missileExplosionCooldown())
                             antiGravitationalMissileBuffer.add(antiGravitationalMissile);
                     }
                 }
+
+                //We now send the buffers to the Game Manager to get destroyed
+                gameManager.removeLaserBombs(laserBuffer);
+                gameManager.removePowerUps(powerUpBuffer);
                 gameManager.removeAntiGravitationalMissiles(antiGravitationalMissileBuffer);
 
                 resetMatrix();
@@ -254,21 +253,24 @@ public class Navium extends PApplet {
                 if (gameManager.indicators())
                     hud.drawVariables(this, gameManager, resolutionManager);
 
-                for (int i = gameManager.asteroids().size(); i <= gameManager.maxAsteroids(); i++) {
-                    int sz = Math.round(random(1, 3));
-                    Asteroid.Size size = Asteroid.Size.REGULAR;
-                    switch (sz) {
-                        case 1:
-                            size = Asteroid.Size.SMAlL;
-                            break;
-                        case 2:
-                            size = Asteroid.Size.REGULAR;
-                            break;
-                        case 3:
-                            size = Asteroid.Size.BIG;
-                            break;
+                //If we have less asteroids than we're supposed to we add the missing ones here
+                if (gameManager.asteroids().size() < gameManager.maxAsteroids()) {
+                    for (int i = gameManager.asteroids().size(); i <= gameManager.maxAsteroids(); i++) {
+                        int sz = Math.round(random(1, 3));
+                        Asteroid.Size size = Asteroid.Size.REGULAR;
+                        switch (sz) {
+                            case 1:
+                                size = Asteroid.Size.SMAlL;
+                                break;
+                            case 2:
+                                size = Asteroid.Size.REGULAR;
+                                break;
+                            case 3:
+                                size = Asteroid.Size.BIG;
+                                break;
+                        }
+                        gameManager.addAsteroid(new Asteroid(gameManager.generateNewCelestialPosition(this, camera), this, resolutionManager, size));
                     }
-                    gameManager.addAsteroid(new Asteroid(gameManager.generateNewCelestialPosition(this, camera), this, resolutionManager, size));
                 }
 
                 //If health is equal to or below zero, the game state is changed to Game Over
@@ -285,17 +287,19 @@ public class Navium extends PApplet {
                 //Writing game over on the center of the screen
                 resetMatrix();
                 pushStyle();
-                {
-                    textAlign(CENTER);
-                    textSize(36);
-                    text("GAME OVER", width / 2, height / 2);
-                }
-                popStyle();
-                break;
+            {
+                textAlign(CENTER);
+                textSize(36);
+                text("GAME OVER", width / 2, height / 2);
+            }
+            popStyle();
+            break;
             case PAUSE:
+
+                //This state's logic is pretty straight forward, we don't update anything but the timings (just so we don't have frame skips because of the astronomic delta time we'd have when resuming the game)
+                //We display every game object without updating it
                 timingManager.update(this);
                 starfield.display(g);
-                camera.update(spaceship.position());
                 camera.apply(this);
                 for (CelestialBody celestialBody : gameManager.celestialBodies())
                     celestialBody.display(camera, this, assetManager, spaceship.front());
@@ -318,6 +322,7 @@ public class Navium extends PApplet {
             g.popStyle();
             g.popMatrix();
 
+            //Display the pause menu almost as a overlay
             pause.display(new PVector(mouseX, mouseY), g, assetManager);
             break;
             case HIGHSCORES:
@@ -326,8 +331,7 @@ public class Navium extends PApplet {
                 //Updating the starfield and displaying it
                 starfield.update(this, resolutionManager, timingManager.deltaTime());
                 starfield.display(this.g);
-                //Displaying the FPS if the game's indicators are enable
-                //Displaying the Menu itself
+                //Displaying the highscores menu itself
                 highScores.display(this, assetManager, saveManager.saveGame().scores(), new PVector(mouseX, mouseY));
                 break;
         }
@@ -359,14 +363,14 @@ public class Navium extends PApplet {
                 gameManager.setGodTo(!gameManager.god());
             if (key == 't')
                 saveFrame("screenshots/screenShot-#####.jpg");
+            if (key == 'p')
+                setState(States.PAUSE);
             if (key == 'r') {
                 if (gameManager.isZoomed())
                     zoomOut();
                 else
                     zoomIn();
             }
-            if (key == 'p')
-                setState(States.PAUSE);
         }
     }
 
@@ -455,7 +459,7 @@ public class Navium extends PApplet {
         }
     }
 
-    //This method creates a missile.
+    //This method creates a missile. Not much to it
     private void createMissile() {
         gameManager.addAntiGravitationalMissile(new AntiGravitationalMissile(spaceship.position().copy().add(new PVector(0, 0, spaceship.front())), resolutionManager));
     }
@@ -489,7 +493,7 @@ public class Navium extends PApplet {
                 noCursor();
                 if (gameManager.state() == States.MAIN_MENU) {
                     menu = null;
-                    spaceship = new Spaceship(new PVector(width / 2 + 200, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
+                    spaceship = new Spaceship(new PVector(width / 2 + 200, height / 2, 0), resolutionManager.resolvedOf(10), resolutionManager);
                     camera = new Camera(spaceship.position(), 100);
                     hud = new HUD();
                     gameManager.initializeCelestialBodies();
@@ -509,7 +513,7 @@ public class Navium extends PApplet {
                 saveManager.saveGame().saveScore(gameManager.score());
                 saveManager.saveSaveGame(this);
                 gameManager.increaseScore(-gameManager.score());
-                spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
+                spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.resolvedOf(10), resolutionManager);
                 gameManager.clearCelestialBodies();
                 break;
             case HIGHSCORES:

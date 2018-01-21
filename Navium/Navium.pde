@@ -1,328 +1,528 @@
-import Celestials.Asteroid;
-import Celestials.CelestialBody;
-import Celestials.Laser;
-import Game.Camera;
-import Game.Spaceship;
-import Utilities.AssetManager;
-import Utilities.Menu;
-import Utilities.ResolutionManager;
-import Utilities.TimingManager;
+import celestials.*;
+import game.*;
 import processing.core.PApplet;
 import processing.core.PVector;
+import utilities.*;
 
 import java.util.ArrayList;
 
-    private static final int STATE_MAIN_MENU = 0;
-    private static final int STATE_RUNNING = 1;
-    private static final int STATE_PAUSE_MENU = 2;
-    private static final int STATE_GAME_OVER = 3;
+public class Navium extends PApplet {
 
-    private boolean up, down, left, right, zoomed, fuzzy, debug, stopped, indicators, god, shaking;
-    private Camera camera;
-    private int state;
-    private Menu menu;
-    private ArrayList<CelestialBody> celestialBodies;
+    private SaveManager saveManager;
     private TimingManager timingManager;
     private ResolutionManager resolutionManager;
     private Spaceship spaceship;
+    private Camera camera;
+    private HighScores highScores;
+    private Menu menu;
+    private HUD hud;
+    private Pause pause;
+    private GameManager gameManager;
     private AssetManager assetManager;
-
-    //public static void main(String[] args) {
-    //    PApplet.main(new String[]{MainApp.class.getName()});
-    //}
+    private Starfield starfield;
 
     public void settings() {
         fullScreen(P2D);
+        smooth(8);
     }
 
     public void setup() {
-      println(dataPath(""));
         background(0);
         frameRate(120);
+        saveManager = new SaveManager();
+        saveManager.loadSaveGame(this);
         assetManager = new AssetManager(this);
         resolutionManager = new ResolutionManager(width, height);
-        zoomed = fuzzy = debug = god = indicators = stopped = false;
-        camera = new Camera(new PVector(0, 0, 0), resolutionManager.getResolvedOfWidth(100));
+        gameManager = new GameManager(resolutionManager);
+        starfield = new Starfield(this, resolutionManager, Math.round(resolutionManager.resolvedOfWidth(1200)));
         timingManager = new TimingManager(this);
-        setState(STATE_MAIN_MENU);
+        setState(States.MAIN_MENU);
+        camera = new Camera(new PVector(0, 0, 0), resolutionManager.resolvedOfWidth(100));
     }
 
     public void draw() {
         background(0);
-        switch (state) {
-            case STATE_MAIN_MENU:
-                text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(20));
-                menu.display(this.g, assetManager);
+        switch (gameManager.state()) {
+            case MAIN_MENU:
+                //Updating the Timing Manager, so that the game has a refreshed millis() count
+                timingManager.update(this);
+                //Updating the starfield and displaying it
+                starfield.update(this, resolutionManager, timingManager.deltaTime());
+                starfield.display(this.g);
+                //Displaying the FPS if the game's indicators are enabled
+                if (gameManager.indicators())
+                    text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.resolvedOfWidth(20), resolutionManager.resolvedOfHeight(20));
+                //Displaying the Menu itself
+                menu.display(new PVector(mouseX, mouseY), this.g, assetManager);
                 break;
 
-            case STATE_RUNNING:
+            case RUNNING:
+                //Updating the Timing Manager, so that the game has a refreshed millis() count
                 timingManager.update(this);
-                spaceship.update(up, down, left, right, timingManager.getDeltaTime(), stopped);
-                spaceship.increaseScore(Math.round(timingManager.getDeltaTime()));
-                camera.update(spaceship.getPosition());
+                //Buffer is used to copy all Laser Bombs and Power-Ups that need to be destroyed
+                ArrayList<LaserBomb> laserBuffer = new ArrayList<LaserBomb>();
+                ArrayList<PowerUp> powerUpBuffer = new ArrayList<PowerUp>();
+                //Updating the starfield and displaying it
+                starfield.update(this, resolutionManager, timingManager.deltaTime());
+                starfield.display(this.g);
+
+                //Updating the spaceship's position to the required one by the player and the game's speed.
+                spaceship.update(gameManager, gameManager.up(), gameManager.down(), gameManager.left(), gameManager.right(), gameManager.rotateLeft(), gameManager.rotateRight(), timingManager.deltaTime(), gameManager.isStopped());
+
+                //Increasing the player's score
+                gameManager.increaseScore(Math.round(timingManager.deltaTime() * .1F));
+
+                if (gameManager.score() >= gameManager.lastIncreaseMaxAsteroids() + 10000) {
+                    gameManager.setMaxAsteroidsTo(gameManager.maxAsteroids() + 10);
+                    gameManager.setLastIncreaseMaxAsteroidsTo(gameManager.score());
+                }
+
+                if (gameManager.score() >= gameManager.lastIncreasePowerUps() + 5000 && gameManager.powerUps().size() < 10) {
+
+                    PowerUp.IEffect effect = new PowerUp.HealthEffect();
+
+                    switch (Math.round(random(1, 2))) {
+                        case 1:
+                            effect = new PowerUp.MissileEffect();
+                            break;
+                        case 2:
+                            effect = new PowerUp.HealthEffect();
+                            break;
+                    }
+
+                    gameManager.addPowerUp(new PowerUp(gameManager.generateNewCelestialPosition(this, camera), effect));
+                    gameManager.setLastIncreaseMaxAsteroidsTo(gameManager.score());
+                }
+
+                //Update camera to the spaceship's position
+                camera.update(spaceship.position());
+                //If the camera is shaking keep it shaking until shake time is over
+                if (gameManager.isShaking()) {
+                    if (timingManager.timeSinceLastShakeTimestamp() < camera.shakeCooldown())
+                        camera.shake(this, resolutionManager, spaceship.position());
+                    else
+                        shaking(false);
+                }
                 camera.apply(this);
 
-                java.util.Collections.sort(celestialBodies);
+                //Sorting the Celestial Bodies, so that the ones that are furthest can be handled first, we do this to draw
+                java.util.Collections.sort(gameManager.celestialBodies());
 
-                for (CelestialBody celestialBody : celestialBodies) {
-                    if (fuzzy)
-                        celestialBody.update();
+                for (Asteroid asteroid : gameManager.asteroids()) {
+                    //Updating the Asteroids
+                    asteroid.update(timingManager.deltaTime() * .001F);
 
-                    if (celestialBody.getActive())
-                        celestialBody.display(camera, this, assetManager, spaceship.getFront(), debug);
+                    //If the asteroid passed by the player
+                    if (asteroid.passedBy(camera, spaceship.front())) {
 
-                    if (celestialBody.getClass().getName().equals("Celestials.Asteroid") && celestialBody.passedBy(camera, spaceship.getFront())) {
-                        boolean betweenX = isBetween(celestialBody.getPosition().x, spaceship.getPosition().x - spaceship.getRadiusX(), spaceship.getPosition().x + spaceship.getRadiusX());
-                        boolean betweenY = isBetween(celestialBody.getPosition().y, spaceship.getPosition().y - spaceship.getRadiusY(), spaceship.getPosition().y + spaceship.getRadiusY());
+                        //If the asteroid is in the players hit box in X and Y
+                        boolean betweenX = isBetween(asteroid.position().x, spaceship.position().x - spaceship.radiusX(), spaceship.position().x + spaceship.radiusX());
+                        boolean betweenY = isBetween(asteroid.position().y, spaceship.position().y - spaceship.radiusY(), spaceship.position().y + spaceship.radiusY());
 
-                        if (betweenX && betweenY && !god) {
-                            spaceship.setHealth(spaceship.getHealth() - 10);
-                            setShaking(true);
+                        //If the asteroid hit the player and the player is not in god mode decrease health and shake camera
+                        if (betweenX && betweenY && !gameManager.god() && asteroid.isActive()) {
+                            spaceship.setHealthTo(spaceship.health() - 10);
+                            shaking(true);
                         }
 
-                        celestialBody.setPosition(generateNewCelestialPosition());
-                        celestialBody.setActive(true);
+                        //Reset position of the asteroid and their active state to true so they can be displayed.
+                        asteroid.resetPhysics();
+                        switch (asteroid.size()) {
+                            case BIG:
+                                asteroid.setHealthTo(2);
+                                break;
+                            case REGULAR:
+                                asteroid.setHealthTo(1);
+                                break;
+                            case SMAlL:
+                                asteroid.setHealthTo(1);
+                                break;
+                        }
+                        asteroid.setPositionTo(gameManager.generateNewCelestialPosition(this, camera));
+                        asteroid.setActiveTo(true);
                     }
                 }
 
-                if (timingManager.getTimeSinceLastTimestampHeat() >= spaceship.getHeatCooldown())
-                    spaceship.setHeat(spaceship.getHeat() - 2, timingManager);
+                for (PowerUp powerUp : gameManager.powerUps()) {
+                    //Updating the Asteroids
+                    powerUp.update(timingManager.deltaTime() * .001F);
+                    //If the powerUp passed by the player
+                    if (powerUp.passedBy(camera, spaceship.front()))
+                        powerUpBuffer.add(powerUp);
+                }
 
-                ArrayList<Asteroid> asteroids = new ArrayList<Asteroid>();
+                //Displaying all Celestial Bodies, if they're active
+                for (CelestialBody celestialBody : gameManager.celestialBodies())
+                    if (celestialBody.isActive())
+                        celestialBody.display(camera, this, assetManager, spaceship.front());
 
-                for (CelestialBody celestialBody : celestialBodies)
-                    if (celestialBody.getClass().getName().equals("Celestials.Asteroid"))
-                        asteroids.add((Asteroid) celestialBody);
+                //Check if we can update the heat
+                if (timingManager.timeSinceLastTimestampHeat() >= spaceship.heatCooldown())
+                    spaceship.setHeatTo(spaceship.heat() - 2, timingManager);
 
                 //Sorting the asteroids and then reverse the order, if it's closer it'll be handled first
+                //java.util.Collections.sort(gameManager.asteroids());
+                java.util.Collections.reverse(gameManager.asteroids());
 
-                java.util.Collections.sort(asteroids);
-                java.util.Collections.reverse(asteroids);
 
-                ArrayList<CelestialBody> buffer = new ArrayList<CelestialBody>();
+                for (LaserBomb laserBomb : gameManager.laserBombs()) {
+                    //Updating the speed
+                    laserBomb.update(timingManager.deltaTime() * .1F);
 
-                for (CelestialBody celestialBody : celestialBodies)
-                    if (celestialBody.getClass().getName().equals("Celestials.Laser")) {
-                        celestialBody.update();
-                        if (celestialBody.getPosition().z > spaceship.getPosition().z + spaceship.getMaxZ())
-                            buffer.add(celestialBody);
-                        for (Asteroid asteroid : asteroids)
-                            if (((Laser) celestialBody).collidingWith(resolutionManager, asteroid)) {
-                                spaceship.increaseScore(50);
-                                asteroid.setActive(false);
-                                buffer.add(celestialBody);
+                    //If the Laser Bomb is further than the furthest possible value of asteroid generation it missed all possible asteroids, it can be added to the buffer to get destroyed
+                    if (laserBomb.position().z > spaceship.position().z + gameManager.maxZ())
+                        laserBuffer.add(laserBomb);
+
+                    boolean broken = false;
+
+                    //If the Laser Bomb is colliding with any asteroid the score increases, the asteroid gets deactivated and the Laser Bomb gets added to the buffer to get destroyed
+                    for (Asteroid asteroid : gameManager.asteroids()) {
+                        float radius = 350;
+                        switch (asteroid.size()) {
+                            case BIG:
+                                radius = 300;
                                 break;
+                            case REGULAR:
+                                radius = 250;
+                                break;
+                            case SMAlL:
+                                radius = 200;
+                                break;
+                        }
+                        if (laserBomb.hit(asteroid, radius) && asteroid.isActive()) {
+                            timingManager.hitTimestamp();
+                            asteroid.setHealthTo(asteroid.health() - 1);
+                            if (asteroid.health() == 0) {
+                                gameManager.increaseScore(50);
+                                asteroid.setActiveTo(false);
                             }
+                            if (asteroid.size() != Asteroid.Size.SMAlL)
+                                laserBuffer.add(laserBomb);
+                            broken = true;
+                            break;
+                        }
                     }
 
-                celestialBodies.removeAll(buffer);
+                    if (broken) continue;
 
-                resetMatrix();
-                if (shaking) {
-                    if (timingManager.getTimeSinceLastShakeTimestamp() < camera.getShakeCooldown())
-                        camera.shake(this, resolutionManager, spaceship.getPosition());
-                    else
-                        setShaking(false);
+
+                    for (PowerUp powerUp : gameManager.powerUps()) {
+                        if (laserBomb.hit(powerUp, 250)) {
+                            timingManager.hitTimestamp();
+                            powerUp.apply(spaceship);
+                            powerUpBuffer.add(powerUp);
+                            laserBuffer.add(laserBomb);
+                            break;
+                        }
+                    }
                 }
 
+                //We now send the buffer to the Game Manager to get destroyed
+                gameManager.removeLaserBombs(laserBuffer);
+                gameManager.removePowerUps(powerUpBuffer);
 
-                spaceship.drawHealth(this, resolutionManager);
-                spaceship.drawHeat(this, resolutionManager);
-                spaceship.drawCrosshair(this, assetManager);
-                text("Score: " + Float.toString(spaceship.getScore()), resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(40));
 
-                if (indicators)
-                    showVariables();
+                ArrayList<AntiGravitationalMissile> antiGravitationalMissileBuffer = new ArrayList<AntiGravitationalMissile>();
 
-                if (spaceship.getHealth() <= 0)
-                    setState(STATE_GAME_OVER);
+                for (AntiGravitationalMissile antiGravitationalMissile : gameManager.antiGravitationalMissiles()) {
+                    antiGravitationalMissile.update(timingManager.deltaTime() * .1F);
+                    if (antiGravitationalMissile.position().z > spaceship.position().z + 1500 && !antiGravitationalMissile.hasExploded()) {
+                        antiGravitationalMissile.explode(gameManager.celestialBodies(), resolutionManager);
+                        antiGravitationalMissile.markMissileExplosionTimestamp(timingManager.millis());
+                    }
+                    if (antiGravitationalMissile.hasExploded()) {
+                        antiGravitationalMissile.explode(gameManager.celestialBodies(), resolutionManager);
+                        if (timingManager.millis() - antiGravitationalMissile.missileExplosionTimestamp() >= antiGravitationalMissile.missileExplosionCooldown())
+                            antiGravitationalMissileBuffer.add(antiGravitationalMissile);
+                    }
+                }
+                gameManager.removeAntiGravitationalMissiles(antiGravitationalMissileBuffer);
+
+                resetMatrix();
+                if (timingManager.timeSinceLastHit() < gameManager.hitCooldown())
+                    hud.drawHit(this, assetManager);
+                hud.drawCockpit(this, assetManager);
+                hud.drawHealth(spaceship.health(), this, resolutionManager, assetManager);
+                hud.drawHeat(spaceship.heat(), this, resolutionManager, assetManager);
+                hud.drawCrosshair(this, assetManager);
+                hud.drawScore(gameManager.score(), this, resolutionManager, assetManager);
+                if (gameManager.indicators())
+                    hud.drawVariables(this, gameManager, resolutionManager);
+
+                for (int i = gameManager.asteroids().size(); i <= gameManager.maxAsteroids(); i++) {
+                    int sz = Math.round(random(1, 3));
+                    Asteroid.Size size = Asteroid.Size.REGULAR;
+                    switch (sz) {
+                        case 1:
+                            size = Asteroid.Size.SMAlL;
+                            break;
+                        case 2:
+                            size = Asteroid.Size.REGULAR;
+                            break;
+                        case 3:
+                            size = Asteroid.Size.BIG;
+                            break;
+                    }
+                    gameManager.addAsteroid(new Asteroid(gameManager.generateNewCelestialPosition(this, camera), this, resolutionManager, size));
+                }
+
+                //If health is equal to or below zero, the game state is changed to Game Over
+                if (spaceship.health() <= 0)
+                    setState(States.GAME_OVER);
+
                 break;
+            case GAME_OVER:
+                timingManager.update(this);
+                starfield.display(g);
+                starfield.update(this, resolutionManager, timingManager.deltaTime());
+                camera.update(spaceship.position());
+                camera.apply(this);
+                //Writing game over on the center of the screen
+                resetMatrix();
+                pushStyle();
+                {
+                    textAlign(CENTER);
+                    textSize(36);
+                    text("GAME OVER", width / 2, height / 2);
+                }
+                popStyle();
+                break;
+            case PAUSE:
+                timingManager.update(this);
+                starfield.display(g);
+                camera.update(spaceship.position());
+                camera.apply(this);
+                for (CelestialBody celestialBody : gameManager.celestialBodies())
+                    celestialBody.display(camera, this, assetManager, spaceship.front());
 
-            case STATE_GAME_OVER:
-                textMode(CENTER);
-                textSize(15);
-                text("GAME OVER", width / 2, height / 2);
+                resetMatrix();
+
+                hud.drawCockpit(this, assetManager);
+                hud.drawHealth(spaceship.health(), this, resolutionManager, assetManager);
+                hud.drawHeat(spaceship.heat(), this, resolutionManager, assetManager);
+                hud.drawCrosshair(this, assetManager);
+                hud.drawScore(gameManager.score(), this, resolutionManager, assetManager);
+
+                g.pushMatrix();
+                g.pushStyle();
+            {
+                g.fill(127, 30);
+                g.stroke(127, 30);
+                g.rect(0, 0, width, height);
+            }
+            g.popStyle();
+            g.popMatrix();
+
+            pause.display(new PVector(mouseX, mouseY), g, assetManager);
+            break;
+            case HIGHSCORES:
+                //Updating the Timing Manager, so that the game has a refreshed millis() count
+                timingManager.update(this);
+                //Updating the starfield and displaying it
+                starfield.update(this, resolutionManager, timingManager.deltaTime());
+                starfield.display(this.g);
+                //Displaying the FPS if the game's indicators are enable
+                //Displaying the Menu itself
+                highScores.display(this, assetManager, saveManager.saveGame().scores(), new PVector(mouseX, mouseY));
                 break;
         }
     }
 
     public void keyPressed() {
-        if (key == 'a')
-            left = true;
-        if (key == 'd')
-            right = true;
-        if (key == 'w')
-            up = true;
-        if (key == 's')
-            down = true;
-        if (key == 'f')
-            fuzzy = !fuzzy;
-        if (key == 'b')
-            debug = !debug;
-        if (key == 'z')
-            stopped = !stopped;
-        if (key == 'i')
-            indicators = !indicators;
-        if (key == 'g')
-            god = !god;
+        if (gameManager.state() == States.RUNNING) {
+            if (key == 'a')
+                gameManager.setLeftTo(true);
+            if (key == 'd')
+                gameManager.setRightTo(true);
+            if (key == 'w')
+                gameManager.setUpTo(true);
+            if (key == 's')
+                gameManager.setDownTo(true);
+            if (key == 'q')
+                gameManager.setRotateLeftTo(true);
+            if (key == 'e')
+                gameManager.setRotateRightTo(true);
+            if (key == 'f')
+                gameManager.setFuzzyTo(!gameManager.isFuzzy());
+            if (key == 'b')
+                gameManager.increaseScore(10000);
+            if (key == 'z')
+                gameManager.setStoppedTo(!gameManager.isStopped());
+            if (key == 'i')
+                gameManager.setIndicatorsTo(!gameManager.indicators());
+            if (key == 'g')
+                gameManager.setGodTo(!gameManager.god());
+            if (key == 't')
+                saveFrame("screenshots/screenShot-#####.jpg");
+            if (key == 'r') {
+                if (gameManager.isZoomed())
+                    zoomOut();
+                else
+                    zoomIn();
+            }
+            if (key == 'p')
+                setState(States.PAUSE);
+        }
     }
 
     public void keyReleased() {
-        if (key == 'a')
-            left = false;
-        if (key == 'd')
-            right = false;
-        if (key == 'w')
-            up = false;
-        if (key == 's')
-            down = false;
+        if (gameManager.state() == States.RUNNING) {
+            if (key == 'a')
+                gameManager.setLeftTo(false);
+            if (key == 'd')
+                gameManager.setRightTo(false);
+            if (key == 'w')
+                gameManager.setUpTo(false);
+            if (key == 's')
+                gameManager.setDownTo(false);
+            if (key == 'q')
+                gameManager.setRotateLeftTo(false);
+            if (key == 'e')
+                gameManager.setRotateRightTo(false);
+        }
     }
 
     public void mousePressed() {
-        switch (state) {
-            case STATE_MAIN_MENU:
-
+        String result;
+        switch (gameManager.state()) {
+            case MAIN_MENU:
                 //Check if any button is clicked
-
-                String result = menu.checkButtons(mouseX, mouseY);
+                result = menu.checkButtons(new PVector(mouseX, mouseY));
 
                 //If it is execute the action corresponding to that button
-
                 if (!result.isEmpty()) {
-
-
                     switch (result) {
                         case "play":
-                            setState(STATE_RUNNING);
+                            setState(States.RUNNING);
+                            break;
+                        case "highScores":
+                            setState(States.HIGHSCORES);
                             break;
                         case "quit":
                             exit();
                             break;
                     }
-                    break;
                 }
-            case STATE_RUNNING:
+                break;
+            case RUNNING:
                 if (mouseButton == RIGHT) {
-                    if (zoomed)
-                        zoomOut();
-                    else
-                        zoomIn();
-                } else if (mouseButton == LEFT) {
+                    if (gameManager.god()) {
+                        createMissile();
+                    } else if (spaceship.missiles() > 0) {
+                        createMissile();
+                        spaceship.setMissilesTo(spaceship.missiles() - 1);
+                    }
+                } else if (mouseButton == LEFT)
+                    createLaser();
+                break;
+            case GAME_OVER:
+                setState(States.MAIN_MENU);
+                break;
+            case PAUSE:
+                //Check if any button is clicked
+                result = pause.checkButtons(new PVector(mouseX, mouseY));
 
-                    if (spaceship.getHeat() <= 98 || god) {
-
-                        //Create Laser
-                        celestialBodies.add(new Laser(spaceship.getPosition().copy(), resolutionManager));
-
-                        //Increase the heat
-                        if (!god)
-                            spaceship.setHeat(spaceship.getHeat() + 2, timingManager);
+                //If it is execute the action corresponding to that button
+                if (!result.isEmpty()) {
+                    switch (result) {
+                        case "resume":
+                            setState(States.RUNNING);
+                            break;
+                        case "quit":
+                            setState(States.MAIN_MENU);
+                            break;
                     }
                 }
                 break;
+            case HIGHSCORES:
+                //Check if any button is clicked
+                result = highScores.checkButtons(new PVector(mouseX, mouseY));
 
-            case STATE_GAME_OVER:
-                setState(STATE_MAIN_MENU);
+                //If it is execute the action corresponding to that button
+                if (!result.isEmpty()) {
+                    switch (result) {
+                        case "back":
+                            setState(States.MAIN_MENU);
+                            break;
+                    }
+                }
                 break;
+        }
+    }
+
+    //This method creates a missile.
+    private void createMissile() {
+        gameManager.addAntiGravitationalMissile(new AntiGravitationalMissile(spaceship.position().copy().add(new PVector(0, 0, spaceship.front())), resolutionManager));
+    }
+
+    //This method creates a laser. Not much to it
+    private void createLaser() {
+        if (spaceship.heat() <= 98 || gameManager.god()) {
+            //Create Laser
+            gameManager.addLaserBomb(new LaserBomb(spaceship.position().copy().add(new PVector(0, 0, spaceship.front())), resolutionManager));
+
+            //Increase the heat
+            if (!gameManager.god())
+                spaceship.setHeatTo(spaceship.heat() + 2, timingManager);
         }
     }
 
     //This method handles all the behaviour related to the change that is about to be made
-
-    private void setState(int state) {
-        this.state = state;
-        switch (this.state) {
-            case STATE_MAIN_MENU:
+    private void setState(States state) {
+        switch (state) {
+            case MAIN_MENU:
                 cursor();
                 menu = new Menu(this, width / 2, 6, 3, 5);
-                if (celestialBodies != null)
-                    celestialBodies.clear();
+                highScores = null;
+                if (gameManager.celestialBodies() != null)
+                    gameManager.clearCelestialBodies();
                 else
-                    celestialBodies = new ArrayList<CelestialBody>();
+                    gameManager.initializeCelestialBodies();
                 spaceship = null;
                 break;
-            case STATE_RUNNING:
+            case RUNNING:
                 noCursor();
-                menu = null;
-                spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.getResolvedOfWidth(10), resolutionManager);
-                camera = new Camera(spaceship.getPosition(), 100);
-                createCelestials(spaceship.getCelestials());
-                zoomed = indicators = fuzzy = debug = stopped = false;
+                if (gameManager.state() == States.MAIN_MENU) {
+                    menu = null;
+                    spaceship = new Spaceship(new PVector(width / 2 + 200, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
+                    camera = new Camera(spaceship.position(), 100);
+                    hud = new HUD();
+                    gameManager.initializeCelestialBodies();
+                    gameManager.createCelestials(gameManager.maxAsteroids(), camera, this, resolutionManager);
+                    gameManager.setZoomedTo(false);
+                    gameManager.setIndicatorsTo(false);
+                    gameManager.setFuzzyTo(false);
+                    gameManager.setStoppedTo(false);
+                }
                 break;
-            case STATE_PAUSE_MENU:
+            case PAUSE:
                 cursor();
+                pause = new Pause(this, width / 8, 6, 2, 4);
                 break;
-            case STATE_GAME_OVER:
+            case GAME_OVER:
                 cursor();
-                spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.getResolvedOfWidth(10), resolutionManager);
-                celestialBodies.clear();
+                saveManager.saveGame().saveScore(gameManager.score());
+                saveManager.saveSaveGame(this);
+                gameManager.increaseScore(-gameManager.score());
+                spaceship = new Spaceship(new PVector(width / 2, height / 2, 0), resolutionManager.resolvedOfWidth(10), resolutionManager);
+                gameManager.clearCelestialBodies();
+                break;
+            case HIGHSCORES:
+                highScores = new HighScores(this);
                 break;
 
         }
-    }
-
-    private void createCelestials(int number) {
-        celestialBodies = new ArrayList<CelestialBody>();
-        for (int i = 0; i < number; i++) {
-            celestialBodies.add(new Asteroid(generateNewCelestialPosition(), this, resolutionManager));
-        }
-        //        //celestialBodies.add(new Asteroid(new PVector(0, 0, 10000), this, resolutionManager));
-    }
-
-    private void showVariables() {
-
-        //Here we draw the indicators to all the control variables
-
-        text("FPS: " + Float.toString(Math.round(frameRate)), resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(20));
-
-        drawIndicator(debug, "Debug", 60);
-
-        drawIndicator(zoomed, "Zoomed", 80);
-
-        drawIndicator(fuzzy, "Fuzzy", 100);
-
-        drawIndicator(stopped, "Stopped", 120);
-
-        drawIndicator(god, "God", 140);
-
-        drawIndicator(shaking, "Shaking", 160);
-    }
-
-    private void drawIndicator(boolean variable, String text, float y) {
-        int tru = color(0, 255, 0);
-        int flse = color(255, 0, 0);
-
-        int drawColor;
-
-        if (variable)
-            drawColor = tru;
-        else
-            drawColor = flse;
-
-        pushStyle();
-        {
-            fill(drawColor);
-            text(text, resolutionManager.getResolvedOfWidth(20), resolutionManager.getResolvedOfHeight(y));
-        }
-        popStyle();
-
-    }
-
-    private PVector generateNewCelestialPosition() {
-        float x = random(spaceship.getMinX(), spaceship.getMaxX()); //random(width / 8, 7 * width / 8);
-        float y = random(spaceship.getMinY(), spaceship.getMaxY()); //random(height / 8, 7 * height / 8);
-        float z = random(spaceship.getMinZ(), spaceship.getMaxZ()) + camera.getPosition().z; //random((width/height) * 500, (width/height) * 1500);
-        return new PVector(x, y, z);
+        gameManager.setStateTo(state);
     }
 
     private void zoomIn() {
-        camera.setDistance(camera.getDistance() + 100);
-        zoomed = true;
+        camera.setDistanceTo(camera.distance() + 100);
+        gameManager.setZoomedTo(true);
     }
 
     private void zoomOut() {
-        camera.setDistance(camera.getDistance() - 100);
-        zoomed = false;
+        camera.setDistanceTo(camera.distance() - 100);
+        gameManager.setZoomedTo(false);
     }
 
     private boolean isBetween(float number, float min, float max) {
@@ -334,7 +534,8 @@ import java.util.ArrayList;
         return min < number && number < max;
     }
 
-    private void setShaking(boolean shake) {
-        timingManager.setShakingTimestamp();
-        this.shaking = shake;
+    private void shaking(boolean shake) {
+        timingManager.shakingTimestamp();
+        gameManager.setShakingTo(shake);
     }
+}

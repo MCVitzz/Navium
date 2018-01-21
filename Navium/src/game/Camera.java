@@ -22,14 +22,13 @@ public class Camera {
     }
 
     public void shake(PApplet applet, ResolutionManager resolutionManager, PVector base) {
-        float x = applet.random(resolutionManager.resolvedOfWidth(-50), resolutionManager.resolvedOfWidth(50));
-        float y = applet.random(resolutionManager.resolvedOfHeight(-50), resolutionManager.resolvedOfHeight(50));
+        float x = applet.random(resolutionManager.resolvedOf(-70), resolutionManager.resolvedOf(70));
+        float y = applet.random(resolutionManager.resolvedOf(-70), resolutionManager.resolvedOf(70));
 
         update(PVector.add(new PVector(x, y), base));
     }
 
     public void apply(PApplet applet) {
-        //applet.g.translate(applet.width / 2, applet.height / 2);
         applet.g.translate(applet.width / 2, applet.height / 2);
     }
 

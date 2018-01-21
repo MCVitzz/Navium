@@ -37,8 +37,13 @@ public class TimingManager {
     public float timeSinceLastShakeTimestamp() {
         return millis - shakeTimestamp;
     }
+
     public float timeSinceLastHit() {
         return millis - hitTimestamp;
+    }
+
+    public float millis() {
+        return this.millis;
     }
 
     public float deltaTime() {
